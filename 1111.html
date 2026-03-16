@@ -175,6 +175,21 @@
       border-color: #4299e1;
     }
 
+    /* 日期区间样式优化 */
+    .date-range {
+      display: flex;
+      align-items: center;
+    }
+
+    .date-range input {
+      width: 180px;
+    }
+
+    .date-range span {
+      margin: 0 8px;
+      color: #666;
+    }
+
     .form-actions {
       margin-left: 150px;
     }
@@ -504,9 +519,14 @@
             <label>服务商名称：</label>
             <input type="text" placeholder="请输入">
           </div>
+          <!-- 分润日期改为区间选择 -->
           <div class="form-item">
             <label>分润日期：</label>
-            <input type="date">
+            <div class="date-range">
+              <input type="date" placeholder="开始日期" id="profitDateStart">
+              <span>-</span>
+              <input type="date" placeholder="结束日期" id="profitDateEnd">
+            </div>
           </div>
           <div class="form-item">
             <label>收益类型：</label>
@@ -723,9 +743,14 @@
             <label>订单号：</label>
             <input type="text" placeholder="请输入">
           </div>
+          <!-- 取现日期改为区间选择 -->
           <div class="form-item">
             <label>取现日期：</label>
-            <input type="date">
+            <div class="date-range">
+              <input type="date" placeholder="开始日期" id="withdrawDateStart">
+              <span>-</span>
+              <input type="date" placeholder="结束日期" id="withdrawDateEnd">
+            </div>
           </div>
           <div class="form-item">
             <label>取现模式：</label>
@@ -757,7 +782,8 @@
                 <th>服务商类型</th>
                 <th>服务商层级</th>
                 <th>订单号</th>
-                <th>取现日期</th>
+                <!-- 表头改为“取现时间” -->
+                <th>取现时间</th>
                 <th>取现金额</th>
                 <th>取现模式</th>
                 <th>取现费率</th>
@@ -790,7 +816,8 @@
                 <td>代理商</td>
                 <td>1级</td>
                 <td>TX202603040001</td>
-                <td>2026-03-04</td>
+                <!-- 取现时间补充时分秒 -->
+                <td>2026-03-04 10:25:36</td>
                 <td>5000.00</td>
                 <td>D0</td>
                 <td>0.50%</td>
@@ -821,7 +848,8 @@
                 <td>代理商</td>
                 <td>2级</td>
                 <td>TX202603030002</td>
-                <td>2026-03-03</td>
+                <!-- 取现时间补充时分秒 -->
+                <td>2026-03-03 15:48:12</td>
                 <td>3000.00</td>
                 <td>D1</td>
                 <td>0.50%</td>
@@ -852,7 +880,8 @@
                 <td>渠道商</td>
                 <td>A级</td>
                 <td>TX202603040003</td>
-                <td>2026-03-04</td>
+                <!-- 取现时间补充时分秒 -->
+                <td>2026-03-04 17:32:44</td>
                 <td>10000.00</td>
                 <td>D0</td>
                 <td>0.50%</td>

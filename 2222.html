@@ -435,6 +435,17 @@
       width: 100%;
       border-collapse: collapse;
     }
+    
+    /* 日期区间样式 */
+    .date-range {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .date-range span {
+      color: #666;
+    }
   </style>
 </head>
 <body>
@@ -564,7 +575,11 @@
           </div>
           <div class="form-item">
             <label>分润日期：</label>
-            <input type="date">
+            <div class="date-range">
+              <input type="date" placeholder="开始日期">
+              <span>-</span>
+              <input type="date" placeholder="结束日期">
+            </div>
           </div>
           <div class="form-item">
             <label>收益类型：</label>
@@ -783,7 +798,11 @@
           </div>
           <div class="form-item">
             <label>取现时间：</label>
-            <input type="datetime-local">
+            <div class="date-range">
+              <input type="datetime-local" placeholder="开始时间">
+              <span>-</span>
+              <input type="datetime-local" placeholder="结束时间">
+            </div>
           </div>
           <div class="form-item">
             <label>取现模式：</label>
@@ -847,7 +866,7 @@
                 <td>代理商</td>
                 <td>1级</td>
                 <td>TX202603040001</td>
-                <td>2026-03-04 10:30:25</td>
+                <td>2026-03-13 17:32:44</td>
                 <td>5000.00</td>
                 <td>D0</td>
                 <td>0.50%</td>
@@ -877,7 +896,7 @@
                 <td>代理商</td>
                 <td>2级</td>
                 <td>TX202603030002</td>
-                <td>2026-03-03 14:45:12</td>
+                <td>2026-03-12 09:15:36</td>
                 <td>3000.00</td>
                 <td>D1</td>
                 <td>0.50%</td>
@@ -907,7 +926,7 @@
                 <td>渠道商</td>
                 <td>A级</td>
                 <td>TX202603040003</td>
-                <td>2026-03-04 16:20:48</td>
+                <td>2026-03-11 14:28:42</td>
                 <td>10000.00</td>
                 <td>D0</td>
                 <td>0.50%</td>
