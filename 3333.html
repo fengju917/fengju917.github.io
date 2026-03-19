@@ -269,7 +269,7 @@
     .table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 1800px; /* 保证表格列不挤压 */
+      min-width: 2200px; /* 适配取现明细的多列布局 */
     }
 
     .table th,
@@ -764,110 +764,216 @@
           </table>
         </div>
       </div>
+    </div>
 
-    <!-- 新增：服务商取现明细查询 -->
+    <!-- 新增：服务商取现明细查询（完整功能） -->
     <div class="content" id="content-withdraw" style="display: none;">
       <!-- 面包屑 -->
       <div class="breadcrumb">
         <a href="#">服务商中心</a> > <a href="#">服务商管理</a> > <a href="#">数据中心</a> > 服务商取现明细查询
       </div>
 
-      <!-- 查询表单 -->
+      <!-- 查询表单（完整字段） -->
       <div class="search-form">
         <div class="form-row">
           <div class="form-item">
-            <label>服务商类型：</label>
-            <select>
+            <label>服务商层级：</label>
+            <select id="withdraw-level">
               <option value="">请选择</option>
-              <option value="agent">代理商</option>
-              <option value="channel">渠道商</option>
+              <option value="A级渠道">A级渠道</option>
+              <option value="B级渠道">B级渠道</option>
+              <option value="1级代理">1级代理</option>
+              <option value="2级渠道">2级渠道</option>
+              <option value="3级渠道">3级渠道</option>
             </select>
           </div>
           <div class="form-item">
             <label>服务商号：</label>
-            <input type="text" placeholder="请输入">
+            <input type="text" placeholder="请输入服务商号" id="withdraw-code">
           </div>
           <div class="form-item">
             <label>服务商名称：</label>
-            <input type="text" placeholder="请输入">
+            <input type="text" placeholder="请输入服务商名称" id="withdraw-name">
+          </div>
+          <div class="form-item">
+            <label>查询模式：</label>
+            <select id="withdraw-query-mode">
+              <option value="">请选择</option>
+              <option value="all">全部</option>
+              <option value="self">仅查自己</option>
+              <option value="subordinate">仅查下级</option>
+            </select>
+          </div>
+          <div class="form-item">
+            <label>订单号：</label>
+            <input type="text" placeholder="请输入订单号" id="withdraw-order-no">
           </div>
           <div class="form-item">
             <label>取现日期：</label>
             <div class="date-range">
-              <input type="date" placeholder="开始日期">
+              <input type="date" placeholder="开始日期" id="withdraw-date-start">
               <span>-</span>
-              <input type="date" placeholder="结束日期">
+              <input type="date" placeholder="结束日期" id="withdraw-date-end">
             </div>
           </div>
           <div class="form-item">
-            <label>取现状态：</label>
-            <select>
+            <label>取现模式：</label>
+            <select id="withdraw-mode">
               <option value="">请选择</option>
-              <option value="success">成功</option>
-              <option value="failed">失败</option>
-              <option value="processing">处理中</option>
+              <option value="D1">D1</option>
+              <option value="D0">D0</option>
             </select>
           </div>
         </div>
         <div class="form-actions">
-          <button class="btn btn-default">重置</button>
-          <button class="btn btn-primary">查询</button>
+          <button class="btn btn-default" id="withdraw-reset-btn">重置</button>
+          <button class="btn btn-primary" id="withdraw-search-btn">查询</button>
         </div>
       </div>
 
-      <!-- 表格区域 -->
+      <!-- 表格区域（完整表头+示例数据） -->
       <div class="table-container">
         <div class="table-actions">
-          <button class="btn btn-primary">导出</button>
+          <button class="btn btn-primary" id="withdraw-export-btn">导出</button>
         </div>
         <div class="table-scroll-wrapper">
-          <table class="table">
+          <table class="table" id="withdraw-table">
             <thead>
               <tr>
-                <th class="th-green">取现日期</th>
-                <th class="th-green">服务商号</th>
-                <th class="th-green">服务商名称</th>
-                <th class="th-green">服务商类型</th>
-                <th class="th-pink">取现金额</th>
-                <th class="th-pink">手续费</th>
-                <th class="th-yellow">实际到账金额</th>
-                <th class="th-yellow">取现状态</th>
-                <th class="th-yellow">备注</th>
+                <th class="th-none">服务商号</th>
+                <th class="th-none">服务商名称</th>
+                <th class="th-none">服务商层级</th>
+                <th class="th-none">订单号</th>
+                <th class="th-none">取现时间</th>
+                <th class="th-none">取现金额</th>
+                <th class="th-none">取现模式</th>
+                <th class="th-none">取现手续费</th>
+                <th class="th-none">取现银行</th>
+                <th class="th-none">取现卡号</th>
+                <th class="th-none">取现状态</th>
+                <th class="th-none">状态描述</th>
+                <th class="th-none">上级代理商号</th>
+                <th class="th-none">上级代理商名称</th>
+                <th class="th-none">上级代理商层级</th>
+                <th class="th-none">1级代理商号</th>
+                <th class="th-none">1级代理商名称</th>
+                <th class="th-none">直属渠道商号</th>
+                <th class="th-none">直属渠道商名称</th>
+                <th class="th-none">直属渠道商层级</th>
+                <th class="th-none">直属渠道商取现结算价</th>
+                <th class="th-none">直属渠道商取现手续费分润</th>
+                <th class="th-none">A渠道商号</th>
+                <th class="th-none">A渠道商名称</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="withdraw-table-body">
+              <!-- 示例数据1：A级渠道 -->
               <tr>
-                <td>2026-03-05</td>
                 <td>FW001001</td>
                 <td>XX科技有限公司</td>
-                <td>渠道商</td>
+                <td>A级渠道</td>
+                <td>QD20260305001</td>
+                <td>2026-03-05 10:23:45</td>
                 <td>100000.00</td>
+                <td>D1</td>
                 <td>50.00</td>
-                <td>99950.00</td>
+                <td>中国工商银行</td>
+                <td>622208****1234</td>
                 <td>成功</td>
-                <td>自动取现</td>
-              </tr>
-              <tr>
-                <td>2026-03-04</td>
+                <td>取现成功，已到账</td>
                 <td>DL002001</td>
                 <td>张三</td>
-                <td>代理商</td>
-                <td>50000.00</td>
-                <td>25.00</td>
-                <td>49975.00</td>
-                <td>成功</td>
-                <td>手动取现</td>
+                <td>1级代理</td>
+                <td>DL002001</td>
+                <td>张三</td>
+                <td>FW001001</td>
+                <td>XX科技有限公司</td>
+                <td>A级渠道</td>
+                <td>0.05%</td>
+                <td>45.00</td>
+                <td>FW001001</td>
+                <td>XX科技有限公司</td>
               </tr>
+              <!-- 示例数据2：1级代理 -->
               <tr>
-                <td>2026-03-03</td>
+                <td>DL002001</td>
+                <td>张三</td>
+                <td>1级代理</td>
+                <td>QD20260304002</td>
+                <td>2026-03-04 15:10:30</td>
+                <td>50000.00</td>
+                <td>D0</td>
+                <td>25.00</td>
+                <td>中国建设银行</td>
+                <td>621700****5678</td>
+                <td>成功</td>
+                <td>取现成功，已到账</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>DL002001</td>
+                <td>张三</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>0.06%</td>
+                <td>22.50</td>
+                <td>FW001001</td>
+                <td>XX科技有限公司</td>
+              </tr>
+              <!-- 示例数据3：B级渠道（失败案例） -->
+              <tr>
                 <td>FW001002</td>
                 <td>XX网络科技有限公司</td>
-                <td>渠道商</td>
+                <td>B级渠道</td>
+                <td>QD20260303003</td>
+                <td>2026-03-03 09:05:12</td>
                 <td>80000.00</td>
+                <td>D1</td>
                 <td>40.00</td>
-                <td>0.00</td>
+                <td>中国农业银行</td>
+                <td>622848****9012</td>
                 <td>失败</td>
-                <td>银行卡信息错误</td>
+                <td>银行卡信息错误，取现失败</td>
+                <td>DL002001</td>
+                <td>张三</td>
+                <td>1级代理</td>
+                <td>DL002001</td>
+                <td>张三</td>
+                <td>FW001002</td>
+                <td>XX网络科技有限公司</td>
+                <td>B级渠道</td>
+                <td>0.055%</td>
+                <td>36.00</td>
+                <td>FW001001</td>
+                <td>XX科技有限公司</td>
+              </tr>
+              <!-- 示例数据4：2级渠道（处理中） -->
+              <tr>
+                <td>DL002002</td>
+                <td>李四</td>
+                <td>2级渠道</td>
+                <td>QD20260305004</td>
+                <td>2026-03-05 11:30:00</td>
+                <td>30000.00</td>
+                <td>D1</td>
+                <td>15.00</td>
+                <td>中国银行</td>
+                <td>621669****3456</td>
+                <td>处理中</td>
+                <td>取现申请处理中，请等待</td>
+                <td>DL002001</td>
+                <td>张三</td>
+                <td>1级代理</td>
+                <td>DL002001</td>
+                <td>张三</td>
+                <td>FW001001</td>
+                <td>XX科技有限公司</td>
+                <td>A级渠道</td>
+                <td>0.052%</td>
+                <td>13.50</td>
+                <td>FW001001</td>
+                <td>XX科技有限公司</td>
               </tr>
             </tbody>
           </table>
@@ -898,6 +1004,22 @@
       const profitTableHeader = document.getElementById('profitTableHeader');
       const agentDataRows = document.querySelectorAll('.agent-data');
       const channelDataRows = document.querySelectorAll('.channel-data');
+
+      // 取现明细相关元素
+      const withdrawSearchBtn = document.getElementById('withdraw-search-btn');
+      const withdrawResetBtn = document.getElementById('withdraw-reset-btn');
+      const withdrawExportBtn = document.getElementById('withdraw-export-btn');
+      const withdrawTableBody = document.getElementById('withdraw-table-body');
+      const withdrawFormItems = [
+        document.getElementById('withdraw-level'),
+        document.getElementById('withdraw-code'),
+        document.getElementById('withdraw-name'),
+        document.getElementById('withdraw-query-mode'),
+        document.getElementById('withdraw-order-no'),
+        document.getElementById('withdraw-date-start'),
+        document.getElementById('withdraw-date-end'),
+        document.getElementById('withdraw-mode')
+      ];
 
       // 初始化日结表格表头（默认渠道商）
       renderProfitTableHeader('channel');
@@ -1023,6 +1145,125 @@
         
         headerHtml += '</tr>';
         profitTableHeader.innerHTML = headerHtml;
+      }
+
+      // 取现明细 - 查询功能
+      if (withdrawSearchBtn) {
+        withdrawSearchBtn.addEventListener('click', function() {
+          // 获取查询条件
+          const level = document.getElementById('withdraw-level').value;
+          const code = document.getElementById('withdraw-code').value.trim();
+          const name = document.getElementById('withdraw-name').value.trim();
+          const queryMode = document.getElementById('withdraw-query-mode').value;
+          const orderNo = document.getElementById('withdraw-order-no').value.trim();
+          const dateStart = document.getElementById('withdraw-date-start').value;
+          const dateEnd = document.getElementById('withdraw-date-end').value;
+          const withdrawMode = document.getElementById('withdraw-mode').value;
+
+          // 简单的查询逻辑示例（实际项目中需对接后端接口）
+          const rows = withdrawTableBody.querySelectorAll('tr');
+          rows.forEach(row => {
+            // 默认显示
+            let isShow = true;
+            
+            // 服务商层级筛选
+            if (level && row.cells[2].textContent !== level) {
+              isShow = false;
+            }
+            
+            // 服务商号筛选
+            if (code && !row.cells[0].textContent.includes(code)) {
+              isShow = false;
+            }
+            
+            // 服务商名称筛选
+            if (name && !row.cells[1].textContent.includes(name)) {
+              isShow = false;
+            }
+            
+            // 订单号筛选
+            if (orderNo && !row.cells[3].textContent.includes(orderNo)) {
+              isShow = false;
+            }
+            
+            // 取现模式筛选
+            if (withdrawMode && row.cells[6].textContent !== withdrawMode) {
+              isShow = false;
+            }
+            
+            // 日期范围筛选（简化处理，实际需解析时间戳）
+            if (dateStart || dateEnd) {
+              const rowDate = row.cells[4].textContent.split(' ')[0];
+              if (dateStart && rowDate < dateStart) isShow = false;
+              if (dateEnd && rowDate > dateEnd) isShow = false;
+            }
+
+            // 显示/隐藏行
+            row.style.display = isShow ? 'table-row' : 'none';
+          });
+
+          // 提示查询结果
+          const visibleRows = Array.from(rows).filter(row => row.style.display !== 'none');
+          if (visibleRows.length === 0) {
+            alert('未查询到符合条件的记录');
+          } else {
+            alert(`查询到 ${visibleRows.length} 条符合条件的记录`);
+          }
+        });
+      }
+
+      // 取现明细 - 重置功能
+      if (withdrawResetBtn) {
+        withdrawResetBtn.addEventListener('click', function() {
+          // 清空所有查询条件
+          withdrawFormItems.forEach(item => {
+            if (item.tagName === 'INPUT') {
+              item.value = '';
+            } else if (item.tagName === 'SELECT') {
+              item.value = '';
+            }
+          });
+
+          // 显示所有行
+          const rows = withdrawTableBody.querySelectorAll('tr');
+          rows.forEach(row => {
+            row.style.display = 'table-row';
+          });
+        });
+      }
+
+      // 取现明细 - 导出功能
+      if (withdrawExportBtn) {
+        withdrawExportBtn.addEventListener('click', function() {
+          // 模拟导出逻辑（实际项目中需对接后端导出接口）
+          // 1. 获取表头
+          const headers = Array.from(withdrawTableBody.parentElement.querySelector('thead tr').cells)
+            .map(cell => cell.textContent);
+          
+          // 2. 获取数据行
+          const rows = Array.from(withdrawTableBody.querySelectorAll('tr'))
+            .filter(row => row.style.display !== 'none')
+            .map(row => Array.from(row.cells).map(cell => cell.textContent));
+          
+          // 3. 构造CSV内容
+          const csvContent = [
+            headers.join(','),
+            ...rows.map(row => row.join(','))
+          ].join('\n');
+          
+          // 4. 创建下载链接
+          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.setAttribute('href', url);
+          link.setAttribute('download', `服务商取现明细_${new Date().toLocaleDateString().replace(/\//g, '-')}.csv`);
+          link.style.visibility = 'hidden';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+
+          alert('导出成功，文件已下载');
+        });
       }
 
       // 初始化显示日结查询
