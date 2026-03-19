@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>业务管控平台 - 服务商日结交易价差分润查询</title>
+  <style>
+    /* 全局样式 - 贴合后台系统风格 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Microsoft Yahei", Arial, sans-serif;
+    }
+
+    body {
+      background-color: #f5f7fa;
+      color: #333;
+      font-size: 14px;
+      overflow-x: hidden; /* 取消页面整体横向滚动 */
+    }
+
+    /* 顶部导航栏 */
+    .header {
+      height: 50px;
+      background-color: #fff;
+      border-bottom: 1px solid #e6e9ed;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .logo {
+      font-size: 18px;
+      font-weight: bold;
+      color: #2d3748;
+      margin-right: 30px;
+    }
+
+    .top-nav {
+      display: flex;
+    }
+
+    .top-nav a {
+      text-decoration: none;
+      color: #666;
+      padding: 0 15px;
+      height: 50px;
+      line-height: 50px;
+      display: inline-block;
+    }
+
+    .top-nav a.active {
+      color: #4299e1;
+      border-bottom: 2px solid #4299e1;
+    }
+
+    .user-info {
+      margin-left: auto;
+      color: #666;
+    }
+
+    /* 主体布局 */
+    .main {
+      display: flex;
+      min-height: calc(100vh - 50px);
+    }
+
+    /* 左侧侧边栏 */
+    .sidebar {
+      width: 200px;
+      background-color: #fff;
+      border-right: 1px solid #e6e9ed;
+      flex-shrink: 0; /* 防止侧边栏被压缩 */
+    }
+
+    .sidebar-menu {
+      list-style: none;
+    }
+
+    .sidebar-menu > li > a {
+      display: block;
+      padding: 12px 20px;
+      color: #666;
+      text-decoration: none;
+      border-left: 3px solid transparent;
+    }
+
+    .sidebar-menu > li > a:hover,
+    .sidebar-menu > li > a.active {
+      background-color: #f0f7ff;
+      color: #4299e1;
+      border-left-color: #4299e1;
+    }
+
+    /* 二级菜单 */
+    .submenu {
+      list-style: none;
+      background-color: #f8f9fa;
+    }
+
+    .submenu li a {
+      display: block;
+      padding: 10px 20px 10px 35px;
+      color: #666;
+      text-decoration: none;
+      font-size: 13px;
+    }
+
+    .submenu li a.active {
+      color: #4299e1;
+      font-weight: 500;
+    }
+
+    /* 三级菜单样式补充 */
+    .submenu .submenu {
+      background-color: #f0f7ff;
+    }
+
+    .submenu .submenu li a {
+      padding-left: 50px;
+    }
+
+    /* 右侧内容区 */
+    .content {
+      flex: 1;
+      padding: 20px;
+      overflow: hidden; /* 取消内容区横向滚动，交给表格容器处理 */
+    }
+
+    .breadcrumb {
+      margin-bottom: 20px;
+      color: #666;
+      font-size: 13px;
+    }
+
+    .breadcrumb a {
+      color: #4299e1;
+      text-decoration: none;
+    }
+
+    /* 查询表单 */
+    .search-form {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 4px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      margin-bottom: 20px;
+    }
+
+    .form-row {
+      display: flex;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+
+    .form-item {
+      display: flex;
+      align-items: center;
+      margin-right: 20px;
+      margin-bottom: 8px;
+    }
+
+    .form-item label {
+      width: 140px;
+      text-align: right;
+      margin-right: 10px;
+      color: #666;
+    }
+
+    .form-item input,
+    .form-item select {
+      height: 32px;
+      padding: 0 10px;
+      border: 1px solid #dcdfe6;
+      border-radius: 4px;
+      width: 200px;
+    }
+
+    .form-item input:focus,
+    .form-item select:focus {
+      outline: none;
+      border-color: #4299e1;
+    }
+
+    /* 日期区间样式优化 */
+    .date-range {
+      display: flex;
+      align-items: center;
+    }
+
+    .date-range input {
+      width: 180px;
+    }
+
+    .date-range span {
+      margin: 0 8px;
+      color: #666;
+    }
+
+    .form-actions {
+      margin-left: 150px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .btn-primary {
+      background-color: #4299e1;
+      color: #fff;
+    }
+
+    .btn-default {
+      background-color: #fff;
+      color: #666;
+      border: 1px solid #dcdfe6;
+      margin-right: 10px;
+    }
+
+    /* 表格容器 - 核心优化：独立横向滚动 */
+    .table-container {
+      background-color: #fff;
+      border-radius: 4px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    /* 表格操作栏 - 固定不滚动 */
+    .table-actions {
+      padding: 15px 20px;
+      border-bottom: 1px solid #e6e9ed;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* 表格滚动容器 - 核心新增 */
+    .table-scroll-wrapper {
+      overflow-x: auto; /* 仅表格区域横向滚动 */
+      scrollbar-width: thin; /* 美化滚动条 */
+    }
+
+    .table-scroll-wrapper::-webkit-scrollbar {
+      height: 8px;
+    }
+
+    .table-scroll-wrapper::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+
+    .table-scroll-wrapper::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+    }
+
+    .table-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1800px; /* 保证表格列不挤压 */
+    }
+
+    .table th,
+    .table td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #e6e9ed;
+      white-space: nowrap; /* 表格内容不换行 */
+    }
+
+    .table th {
+      background-color: #f8f9fa;
+      color: #666;
+      font-weight: 500;
+      position: relative;
+      z-index: 10; /* 保证提示框在最上层 */
+    }
+
+    /* 表头背景色样式 */
+    .table th.th-none {
+      background-color: transparent !important;
+    }
+    .table th.th-green {
+      background-color: #e8f5e9 !important; /* 浅绿色 */
+    }
+    .table th.th-pink {
+      background-color: #fce4ec !important; /* 浅粉红色 */
+    }
+    .table th.th-yellow {
+      background-color: #fff9c4 !important; /* 浅黄色 */
+    }
+
+    /* 移除单元格的背景色继承 */
+    .table td {
+      background-color: transparent !important;
+    }
+
+    /* 操作列宽度固定 - 已移除操作列，该样式保留备用 */
+    .table th:last-child,
+    .table td:last-child {
+      min-width: 120px;
+      width: 120px;
+    }
+
+    /* 问号提示图标样式 */
+    .tooltip-icon {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background-color: #e5e9f2;
+      color: #4299e1;
+      text-align: center;
+      line-height: 16px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-left: 5px;
+      cursor: help;
+      position: relative;
+    }
+
+    /* 提示框样式 */
+    .tooltip-icon:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      top: 25px;
+      left: 0;
+      white-space: pre-wrap;
+      background-color: #2d3748;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      max-width: 400px;
+      width: max-content;
+      min-width: 200px;
+      z-index: 9999;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      line-height: 1.5;
+    }
+
+    /* 提示框小三角 */
+    .tooltip-icon:hover::before {
+      content: '';
+      position: absolute;
+      top: 20px;
+      left: 5px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: transparent transparent #2d3748 transparent;
+      z-index: 9999;
+    }
+
+    .table td a {
+      color: #4299e1;
+      text-decoration: none;
+      display: inline-block;
+      width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .table-empty {
+      text-align: center;
+      padding: 50px 0;
+      color: #999;
+    }
+
+    /* 详情页样式 - 保留但不再使用 */
+    .detail-page {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: flex-start; /* 改为顶部对齐，避免滚动问题 */
+      padding-top: 50px;
+      overflow-y: auto; /* 详情页整体滚动 */
+    }
+
+    .detail-content {
+      width: 95%;
+      max-width: 1600px;
+      background-color: #fff;
+      border-radius: 4px;
+      padding: 20px;
+      margin: 0 auto;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    }
+
+    .detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e6e9ed;
+    }
+
+    .detail-title {
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .close-btn {
+      cursor: pointer;
+      font-size: 20px;
+      color: #666;
+      width: 30px;
+      height: 30px;
+      line-height: 30px;
+      text-align: center;
+    }
+
+    /* 详情页表格优化 */
+    .detail-table-wrapper {
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+
+    .detail-table-wrapper::-webkit-scrollbar {
+      height: 8px;
+    }
+
+    .detail-table-wrapper::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+
+    .detail-table-wrapper::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+    }
+
+    .detail-table {
+      min-width: 1500px; /* 适配新增字段 */
+      width: 100%;
+      border-collapse: collapse;
+    }
+  </style>
+</head>
+<body>
+  <!-- 顶部导航 -->
+  <div class="header">
+    <div class="logo">业务管控平台</div>
+    <div class="top-nav">
+      <a href="#">首页</a>
+      <a href="#">商户中心</a>
+      <a href="#" class="active">服务商中心</a>
+      <a href="#">业务运营</a>
+      <a href="#">系统管理</a>
+      <a href="#">产品运营</a>
+      <a href="#">用户中心</a>
+    </div>
+    <div class="user-info">Hi, 鞠枫</div>
+  </div>
+
+  <!-- 主体内容 -->
+  <div class="main">
+    <!-- 左侧侧边栏 -->
+    <div class="sidebar">
+      <ul class="sidebar-menu">
+        <li>
+          <a href="#" class="active">服务商管理</a>
+          <ul class="submenu">
+            <li><a href="#">服务商信息</a></li>
+            <li><a href="#">服务商信息变更记录</a></li>
+            <li><a href="#">政策中心</a></li>
+            <li><a href="#">报表中心</a></li>
+            <!-- 新增数据中心菜单 -->
+            <li>
+              <a href="#" class="active">数据中心</a>
+              <ul class="submenu">
+                <!-- 修改菜单名称 -->
+                <li><a href="#" class="active" id="menu-profit">-->服务商日结交易价差分润查询</a></li>
+                <!-- 新增月结查询菜单 -->
+                <li><a href="#" id="menu-monthly-profit">-->服务商月结交易价差分润查询</a></li>
+                <li><a href="#" id="menu-withdraw">-->服务商取现明细查询</a></li>
+              </ul>
+            </li>
+            <!-- 原有菜单继续保留 -->
+            <li><a href="#">系统商管理</a></li>
+            <li><a href="#">仓储中心</a></li>
+            <li><a href="#">账务管理</a></li>
+            <li><a href="#">增值服务产品管理</a></li>
+            <li><a href="#">SAAS管理</a></li>
+            <li><a href="#">协议模板管理</a></li>
+            <li><a href="#">银行合作</a></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+
+    <!-- 右侧内容区 - 服务商日结交易价差分润查询（修改模块名称） -->
+    <div class="content" id="content-profit">
+      <!-- 面包屑 - 调整路径适配新菜单结构 -->
+      <div class="breadcrumb">
+        <a href="#">服务商中心</a> > <a href="#">服务商管理</a> > <a href="#">数据中心</a> > 服务商日结交易价差分润查询
+      </div>
+
+      <!-- 查询表单 - 严格拆分：代理商1/2/3级、渠道商A/B级 -->
+      <div class="search-form">
+        <div class="form-row">
+          <div class="form-item">
+            <label>服务商类型：</label>
+            <select id="serviceType-profit">
+              <option value="">请选择</option>
+              <option value="agent">代理商</option>
+              <option value="channel">渠道商</option>
+            </select>
+          </div>
+          <div class="form-item" id="agentLevel-profit" style="display: none;">
+            <label>代理商层级：</label>
+            <select>
+              <option value="">请选择</option>
+              <option value="1级">1级</option>
+              <option value="2级">2级</option>
+              <option value="3级">3级</option>
+            </select>
+          </div>
+          <div class="form-item" id="channelLevel-profit" style="display: none;">
+            <label>渠道商层级：</label>
+            <select>
+              <option value="">请选择</option>
+              <option value="A级">A级</option>
+              <option value="B级">B级</option>
+            </select>
+          </div>
+          <div class="form-item">
+            <label>服务商号：</label>
+            <input type="text" placeholder="请输入">
+          </div>
+          <div class="form-item">
+            <label>服务商名称：</label>
+            <input type="text" placeholder="请输入">
+          </div>
+          <!-- 分润日期改为区间选择 -->
+          <div class="form-item">
+            <label>分润日期：</label>
+            <div class="date-range">
+              <input type="date" placeholder="开始日期" id="profitDateStart">
+              <span>-</span>
+              <input type="date" placeholder="结束日期" id="profitDateEnd">
+            </div>
+          </div>
+          <!-- 移除收益类型枚举 -->
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-default">重置</button>
+          <button class="btn btn-primary" id="searchBtn-profit">查询</button>
+        </div>
+      </div>
+
+      <!-- 表格区域 - 层级严格区分：1/2/3级=代理商，A/B级=渠道商 -->
+      <div class="table-container">
+        <div class="table-actions">
+          <button class="btn btn-primary">导出</button>
+        </div>
+        <!-- 表格滚动容器 -->
+        <div class="table-scroll-wrapper">
+          <table class="table" id="profitTable">
+            <thead id="profitTableHeader">
+              <!-- 表头会通过JS动态生成 -->
+            </thead>
+            <tbody id="profitTableBody">
+              <!-- 渠道商（A/B级）数据 - 适配新表头 -->
+              <tr class="channel-data">
+                <td>2026-03-04</td>
+                <td>FW001001</td>
+                <td>XX科技有限公司</td>
+                <td>渠道商</td>
+                <td>A级</td>
+                <td>渠道日结归集</td>
+                <td>7500.00</td>
+                <td>2500.00</td>
+                <td>450.00</td>
+                <td>150.00</td>
+                <td>0.00</td>
+                <td>0.00</td>
+                <td>9550.00</td>
+              </tr>
+              <tr class="channel-data">
+                <td>2026-03-03</td>
+                <td>FW001002</td>
+                <td>XX网络科技有限公司</td>
+                <td>渠道商</td>
+                <td>B级</td>
+                <td>渠道月结</td>
+                <td>6000.00</td>
+                <td>2000.00</td>
+                <td>360.00</td>
+                <td>120.00</td>
+                <td>0.00</td>
+                <td>0.00</td>
+                <td>7640.00</td>
+              </tr>
+              <!-- 代理商（1/2/3级）数据 - 适配新表头 -->
+              <tr class="agent-data" style="display: none;">
+                <td>2026-03-04</td>
+                <td>DL002001</td>
+                <td>张三</td>
+                <td>代理商</td>
+                <td>1级</td>
+                <td>一代归集</td>
+                <td>3800.00</td>
+                <td>1200.00</td>
+                <td>0.00</td>
+                <td>0.00</td>
+                <td>0.00</td>
+                <td>5000.00</td>
+              </tr>
+              <tr class="agent-data" style="display: none;">
+                <td>2026-03-03</td>
+                <td>DL002002</td>
+                <td>李四</td>
+                <td>代理商</td>
+                <td>2级</td>
+                <td>层层分润</td>
+                <td>2500.00</td>
+                <td>500.00</td>
+                <td>30.00</td>
+                <td>90.00</td>
+                <td>0.00</td>
+                <td>2760.00</td>
+              </tr>
+              <tr class="agent-data" style="display: none;">
+                <td>2026-03-04</td>
+                <td>DL002003</td>
+                <td>王五</td>
+                <td>代理商</td>
+                <td>3级</td>
+                <td>层层分润</td>
+                <td>1200.00</td>
+                <td>300.00</td>
+                <td>15.00</td>
+                <td>45.00</td>
+                <td>0.00</td>
+                <td>1383.00</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 新增：服务商月结交易价差分润查询 -->
+    <div class="content" id="content-monthly-profit" style="display: none;">
+      <!-- 面包屑 -->
+      <div class="breadcrumb">
+        <a href="#">服务商中心</a> > <a href="#">服务商管理</a> > <a href="#">数据中心</a> > 服务商月结交易价差分润查询
+      </div>
+
+      <!-- 查询表单 -->
+      <div class="search-form">
+        <div class="form-row">
+          <div class="form-item">
+            <label>服务商层级：</label>
+            <select>
+              <option value="">请选择</option>
+              <option value="A级渠道">A级渠道</option>
+              <option value="B级渠道">B级渠道</option>
+            </select>
+          </div>
+          <div class="form-item">
+            <label>服务商号：</label>
+            <input type="text" placeholder="请输入">
+          </div>
+          <div class="form-item">
+            <label>服务商名称：</label>
+            <input type="text" placeholder="请输入">
+          </div>
+          <div class="form-item">
+            <label>分润日期：</label>
+            <div class="date-range">
+              <input type="date" placeholder="开始日期">
+              <span>-</span>
+              <input type="date" placeholder="结束日期">
+            </div>
+          </div>
+          <div class="form-item">
+            <label>代发模式：</label>
+            <select>
+              <option value="">请选择</option>
+              <option value="渠道日结归集">渠道日结归集</option>
+              <option value="渠道月结">渠道月结</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-default">重置</button>
+          <button class="btn btn-primary">查询</button>
+        </div>
+      </div>
+
+      <!-- 表格区域 -->
+      <div class="table-container">
+        <div class="table-actions">
+          <button class="btn btn-primary">导出</button>
+        </div>
+        <div class="table-scroll-wrapper">
+          <table class="table">
+            <thead>
+              <tr>
+                <!-- 第一组：无背景色 -->
+                <th class="th-none">分润日期</th>
+                <th class="th-none">服务商号</th>
+                <th class="th-none">服务商名称</th>
+                <th class="th-none">服务商类型</th>
+                <th class="th-none">服务商层级</th>
+                <th class="th-none">代发模式</th>
+                <!-- 第二组：浅粉红色 -->
+                <th class="th-pink">日结代发手续费分润</th>
+                <th class="th-pink">提现手续费分润</th>
+                <th class="th-pink">月留点分润</th>
+                <th class="th-pink">本级日结转月结分润</th>
+                <!-- 第三组：浅黄色 -->
+                <th class="th-yellow">月结实发分润</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>2026-03</td>
+                <td>FW001001</td>
+                <td>XX科技有限公司</td>
+                <td>渠道商</td>
+                <td>A级渠道</td>
+                <td>渠道日结归集</td>
+                <td>1500.00</td>
+                <td>800.00</td>
+                <td>450.00</td>
+                <td>285000.00</td>
+                <td>287750.00</td>
+              </tr>
+              <tr>
+                <td>2026-03</td>
+                <td>FW001002</td>
+                <td>XX网络科技有限公司</td>
+                <td>渠道商</td>
+                <td>B级渠道</td>
+                <td>渠道月结</td>
+                <td>900.00</td>
+                <td>500.00</td>
+                <td>360.00</td>
+                <td>180000.00</td>
+                <td>181760.00</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    <!-- 新增：服务商取现明细查询 -->
+    <div class="content" id="content-withdraw" style="display: none;">
+      <!-- 面包屑 -->
+      <div class="breadcrumb">
+        <a href="#">服务商中心</a> > <a href="#">服务商管理</a> > <a href="#">数据中心</a> > 服务商取现明细查询
+      </div>
+
+      <!-- 查询表单 -->
+      <div class="search-form">
+        <div class="form-row">
+          <div class="form-item">
+            <label>服务商类型：</label>
+            <select>
+              <option value="">请选择</option>
+              <option value="agent">代理商</option>
+              <option value="channel">渠道商</option>
+            </select>
+          </div>
+          <div class="form-item">
+            <label>服务商号：</label>
+            <input type="text" placeholder="请输入">
+          </div>
+          <div class="form-item">
+            <label>服务商名称：</label>
+            <input type="text" placeholder="请输入">
+          </div>
+          <div class="form-item">
+            <label>取现日期：</label>
+            <div class="date-range">
+              <input type="date" placeholder="开始日期">
+              <span>-</span>
+              <input type="date" placeholder="结束日期">
+            </div>
+          </div>
+          <div class="form-item">
+            <label>取现状态：</label>
+            <select>
+              <option value="">请选择</option>
+              <option value="success">成功</option>
+              <option value="failed">失败</option>
+              <option value="processing">处理中</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-default">重置</button>
+          <button class="btn btn-primary">查询</button>
+        </div>
+      </div>
+
+      <!-- 表格区域 -->
+      <div class="table-container">
+        <div class="table-actions">
+          <button class="btn btn-primary">导出</button>
+        </div>
+        <div class="table-scroll-wrapper">
+          <table class="table">
+            <thead>
+              <tr>
+                <th class="th-green">取现日期</th>
+                <th class="th-green">服务商号</th>
+                <th class="th-green">服务商名称</th>
+                <th class="th-green">服务商类型</th>
+                <th class="th-pink">取现金额</th>
+                <th class="th-pink">手续费</th>
+                <th class="th-yellow">实际到账金额</th>
+                <th class="th-yellow">取现状态</th>
+                <th class="th-yellow">备注</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>2026-03-05</td>
+                <td>FW001001</td>
+                <td>XX科技有限公司</td>
+                <td>渠道商</td>
+                <td>100000.00</td>
+                <td>50.00</td>
+                <td>99950.00</td>
+                <td>成功</td>
+                <td>自动取现</td>
+              </tr>
+              <tr>
+                <td>2026-03-04</td>
+                <td>DL002001</td>
+                <td>张三</td>
+                <td>代理商</td>
+                <td>50000.00</td>
+                <td>25.00</td>
+                <td>49975.00</td>
+                <td>成功</td>
+                <td>手动取现</td>
+              </tr>
+              <tr>
+                <td>2026-03-03</td>
+                <td>FW001002</td>
+                <td>XX网络科技有限公司</td>
+                <td>渠道商</td>
+                <td>80000.00</td>
+                <td>40.00</td>
+                <td>0.00</td>
+                <td>失败</td>
+                <td>银行卡信息错误</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 菜单切换逻辑
+    document.addEventListener('DOMContentLoaded', function() {
+      // 获取菜单元素
+      const menuProfit = document.getElementById('menu-profit');
+      const menuMonthlyProfit = document.getElementById('menu-monthly-profit');
+      const menuWithdraw = document.getElementById('menu-withdraw');
+      
+      // 获取内容区域元素
+      const contentProfit = document.getElementById('content-profit');
+      const contentMonthlyProfit = document.getElementById('content-monthly-profit');
+      const contentWithdraw = document.getElementById('content-withdraw');
+
+      // 服务商类型选择联动
+      const serviceTypeSelect = document.getElementById('serviceType-profit');
+      const agentLevel = document.getElementById('agentLevel-profit');
+      const channelLevel = document.getElementById('channelLevel-profit');
+
+      // 日结表格相关元素
+      const profitTableHeader = document.getElementById('profitTableHeader');
+      const agentDataRows = document.querySelectorAll('.agent-data');
+      const channelDataRows = document.querySelectorAll('.channel-data');
+
+      // 初始化日结表格表头（默认渠道商）
+      renderProfitTableHeader('channel');
+
+      // 切换内容显示
+      function showContent(targetContent) {
+        // 隐藏所有内容
+        contentProfit.style.display = 'none';
+        contentMonthlyProfit.style.display = 'none';
+        contentWithdraw.style.display = 'none';
+        // 显示目标内容
+        targetContent.style.display = 'block';
+      }
+
+      // 绑定菜单点击事件
+      if (menuProfit) {
+        menuProfit.addEventListener('click', function(e) {
+          e.preventDefault();
+          showContent(contentProfit);
+          // 激活当前菜单（样式）
+          resetMenuActive();
+          this.classList.add('active');
+        });
+      }
+
+      if (menuMonthlyProfit) {
+        menuMonthlyProfit.addEventListener('click', function(e) {
+          e.preventDefault();
+          showContent(contentMonthlyProfit);
+          // 激活当前菜单（样式）
+          resetMenuActive();
+          this.classList.add('active');
+        });
+      }
+
+      if (menuWithdraw) {
+        menuWithdraw.addEventListener('click', function(e) {
+          e.preventDefault();
+          showContent(contentWithdraw);
+          // 激活当前菜单（样式）
+          resetMenuActive();
+          this.classList.add('active');
+        });
+      }
+
+      // 重置菜单激活状态
+      function resetMenuActive() {
+        const menuItems = document.querySelectorAll('.submenu li a');
+        menuItems.forEach(item => item.classList.remove('active'));
+      }
+
+      // 服务商类型选择联动
+      if (serviceTypeSelect) {
+        serviceTypeSelect.addEventListener('change', function() {
+          const value = this.value;
+          // 切换层级选择框
+          if (value === 'agent') {
+            agentLevel.style.display = 'flex';
+            channelLevel.style.display = 'none';
+            // 渲染代理商表头
+            renderProfitTableHeader('agent');
+            // 切换表格数据
+            agentDataRows.forEach(row => row.style.display = 'table-row');
+            channelDataRows.forEach(row => row.style.display = 'none');
+          } else if (value === 'channel') {
+            channelLevel.style.display = 'flex';
+            agentLevel.style.display = 'none';
+            // 渲染渠道商表头
+            renderProfitTableHeader('channel');
+            // 切换表格数据
+            channelDataRows.forEach(row => row.style.display = 'table-row');
+            agentDataRows.forEach(row => row.style.display = 'none');
+          } else {
+            agentLevel.style.display = 'none';
+            channelLevel.style.display = 'none';
+            // 清空表头
+            profitTableHeader.innerHTML = '';
+            // 隐藏所有数据行
+            agentDataRows.forEach(row => row.style.display = 'none');
+            channelDataRows.forEach(row => row.style.display = 'none');
+          }
+        });
+      }
+
+      // 渲染日结表格表头
+      function renderProfitTableHeader(type) {
+        let headerHtml = '<tr>';
+        
+        if (type === 'channel') {
+          // 渠道商表头 - 按要求的字段和样式分组
+          headerHtml += `
+            <th class="th-none">分润日期</th>
+            <th class="th-none">服务商号</th>
+            <th class="th-none">服务商名称</th>
+            <th class="th-none">服务商类型</th>
+            <th class="th-none">服务商层级</th>
+            <th class="th-none">代发模式</th>
+            <th class="th-pink">本级日结应发分润</th>
+            <th class="th-pink">下级转本级日结分润</th>
+            <th class="th-green">本级月留点分润</th>
+            <th class="th-green">下级月留点分润</th>
+            <th class="th-green">本级转上级分润</th>
+            <th class="th-green">本级日结转月结分润</th>
+            <th class="th-yellow">日结实发分润</th>
+          `;
+        } else if (type === 'agent') {
+          // 代理商表头 - 按要求的字段和样式分组
+          headerHtml += `
+            <th class="th-none">分润日期</th>
+            <th class="th-none">服务商号</th>
+            <th class="th-none">服务商名称</th>
+            <th class="th-none">服务商类型</th>
+            <th class="th-none">服务商层级</th>
+            <th class="th-none">代发模式</th>
+            <th class="th-pink">本级日结应发分润</th>
+            <th class="th-pink">下级转本级日结分润</th>
+            <th class="th-green">日结代发手续费</th>
+            <th class="th-green">本级转上级分润</th>
+            <th class="th-green">本级日结转月结分润</th>
+            <th class="th-yellow">日结实发分润</th>
+          `;
+        }
+        
+        headerHtml += '</tr>';
+        profitTableHeader.innerHTML = headerHtml;
+      }
+
+      // 初始化显示日结查询
+      showContent(contentProfit);
+    });
+  </script>
+</body>
+</html>
