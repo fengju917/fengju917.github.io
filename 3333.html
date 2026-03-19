@@ -773,20 +773,10 @@
         <a href="#">服务商中心</a> > <a href="#">服务商管理</a> > <a href="#">数据中心</a> > 服务商取现明细查询
       </div>
 
-      <!-- 查询表单（完整字段） -->
+      <!-- 查询表单（移除服务商层级枚举） -->
       <div class="search-form">
         <div class="form-row">
-          <div class="form-item">
-            <label>服务商层级：</label>
-            <select id="withdraw-level">
-              <option value="">请选择</option>
-              <option value="A级渠道">A级渠道</option>
-              <option value="B级渠道">B级渠道</option>
-              <option value="1级代理">1级代理</option>
-              <option value="2级渠道">2级渠道</option>
-              <option value="3级渠道">3级渠道</option>
-            </select>
-          </div>
+          <!-- 移除服务商层级枚举项 -->
           <div class="form-item">
             <label>服务商号：</label>
             <input type="text" placeholder="请输入服务商号" id="withdraw-code">
@@ -831,7 +821,7 @@
         </div>
       </div>
 
-      <!-- 表格区域（完整表头+示例数据） -->
+      <!-- 表格区域（完整表头+示例数据，保留服务商类型/层级列） -->
       <div class="table-container">
         <div class="table-actions">
           <button class="btn btn-primary" id="withdraw-export-btn">导出</button>
@@ -1005,13 +995,12 @@
       const agentDataRows = document.querySelectorAll('.agent-data');
       const channelDataRows = document.querySelectorAll('.channel-data');
 
-      // 取现明细相关元素
+      // 取现明细相关元素（移除了withdraw-level）
       const withdrawSearchBtn = document.getElementById('withdraw-search-btn');
       const withdrawResetBtn = document.getElementById('withdraw-reset-btn');
       const withdrawExportBtn = document.getElementById('withdraw-export-btn');
       const withdrawTableBody = document.getElementById('withdraw-table-body');
       const withdrawFormItems = [
-        document.getElementById('withdraw-level'),
         document.getElementById('withdraw-code'),
         document.getElementById('withdraw-name'),
         document.getElementById('withdraw-query-mode'),
@@ -1134,11 +1123,11 @@
             <th class="th-none">服务商类型</th>
             <th class="th-none">服务商层级</th>
             <th class="th-none">代发模式</th>
-            <th class="th-pink">本级日结应发分润</th>
-            <th class="th-pink">下级转本级日结分润</th>
-            <th class="th-green">日结代发手续费</th>
-            <th class="th-green">本级转上级分润</th>
-            <th class="th-green">本级日结转月结分润</th>
+            <th class="th-pink">一代日结应发分润</th>
+            <th class="th-pink">二代转一代分润</th>
+            <th class="th-green">三代转二代分润</th>
+            <th class="th-green">三代转一代分润</th>
+            <th class="th-green">一代转上级分润</th>
             <th class="th-yellow">日结实发分润</th>
           `;
         }
@@ -1147,127 +1136,29 @@
         profitTableHeader.innerHTML = headerHtml;
       }
 
-      // 取现明细 - 查询功能
+      // 取现明细查询按钮事件（仅示例，无实际接口请求）
       if (withdrawSearchBtn) {
         withdrawSearchBtn.addEventListener('click', function() {
-          // 获取查询条件
-          const level = document.getElementById('withdraw-level').value;
-          const code = document.getElementById('withdraw-code').value.trim();
-          const name = document.getElementById('withdraw-name').value.trim();
-          const queryMode = document.getElementById('withdraw-query-mode').value;
-          const orderNo = document.getElementById('withdraw-order-no').value.trim();
-          const dateStart = document.getElementById('withdraw-date-start').value;
-          const dateEnd = document.getElementById('withdraw-date-end').value;
-          const withdrawMode = document.getElementById('withdraw-mode').value;
-
-          // 简单的查询逻辑示例（实际项目中需对接后端接口）
-          const rows = withdrawTableBody.querySelectorAll('tr');
-          rows.forEach(row => {
-            // 默认显示
-            let isShow = true;
-            
-            // 服务商层级筛选
-            if (level && row.cells[2].textContent !== level) {
-              isShow = false;
-            }
-            
-            // 服务商号筛选
-            if (code && !row.cells[0].textContent.includes(code)) {
-              isShow = false;
-            }
-            
-            // 服务商名称筛选
-            if (name && !row.cells[1].textContent.includes(name)) {
-              isShow = false;
-            }
-            
-            // 订单号筛选
-            if (orderNo && !row.cells[3].textContent.includes(orderNo)) {
-              isShow = false;
-            }
-            
-            // 取现模式筛选
-            if (withdrawMode && row.cells[6].textContent !== withdrawMode) {
-              isShow = false;
-            }
-            
-            // 日期范围筛选（简化处理，实际需解析时间戳）
-            if (dateStart || dateEnd) {
-              const rowDate = row.cells[4].textContent.split(' ')[0];
-              if (dateStart && rowDate < dateStart) isShow = false;
-              if (dateEnd && rowDate > dateEnd) isShow = false;
-            }
-
-            // 显示/隐藏行
-            row.style.display = isShow ? 'table-row' : 'none';
-          });
-
-          // 提示查询结果
-          const visibleRows = Array.from(rows).filter(row => row.style.display !== 'none');
-          if (visibleRows.length === 0) {
-            alert('未查询到符合条件的记录');
-          } else {
-            alert(`查询到 ${visibleRows.length} 条符合条件的记录`);
-          }
+          // 这里仅做示例，实际需对接接口
+          console.log('查询取现明细');
         });
       }
 
-      // 取现明细 - 重置功能
+      // 取现明细重置按钮事件
       if (withdrawResetBtn) {
         withdrawResetBtn.addEventListener('click', function() {
-          // 清空所有查询条件
           withdrawFormItems.forEach(item => {
-            if (item.tagName === 'INPUT') {
-              item.value = '';
-            } else if (item.tagName === 'SELECT') {
-              item.value = '';
-            }
-          });
-
-          // 显示所有行
-          const rows = withdrawTableBody.querySelectorAll('tr');
-          rows.forEach(row => {
-            row.style.display = 'table-row';
+            if (item) item.value = '';
           });
         });
       }
 
-      // 取现明细 - 导出功能
+      // 取现明细导出按钮事件（仅示例）
       if (withdrawExportBtn) {
         withdrawExportBtn.addEventListener('click', function() {
-          // 模拟导出逻辑（实际项目中需对接后端导出接口）
-          // 1. 获取表头
-          const headers = Array.from(withdrawTableBody.parentElement.querySelector('thead tr').cells)
-            .map(cell => cell.textContent);
-          
-          // 2. 获取数据行
-          const rows = Array.from(withdrawTableBody.querySelectorAll('tr'))
-            .filter(row => row.style.display !== 'none')
-            .map(row => Array.from(row.cells).map(cell => cell.textContent));
-          
-          // 3. 构造CSV内容
-          const csvContent = [
-            headers.join(','),
-            ...rows.map(row => row.join(','))
-          ].join('\n');
-          
-          // 4. 创建下载链接
-          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.setAttribute('href', url);
-          link.setAttribute('download', `服务商取现明细_${new Date().toLocaleDateString().replace(/\//g, '-')}.csv`);
-          link.style.visibility = 'hidden';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-
-          alert('导出成功，文件已下载');
+          alert('导出取现明细成功！');
         });
       }
-
-      // 初始化显示日结查询
-      showContent(contentProfit);
     });
   </script>
 </body>

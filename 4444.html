@@ -812,34 +812,9 @@
         <a href="#">数据管理</a> > 服务商取现明细查询
       </div>
 
-      <!-- 查询表单 - 严格拆分：代理商1/2/3级、渠道商A/B级 -->
+      <!-- 查询表单 - 已移除服务商类型、代理商层级、渠道商层级查询项 -->
       <div class="search-form">
         <div class="form-row">
-          <div class="form-item">
-            <label>服务商类型：</label>
-            <select id="serviceType-withdraw">
-              <option value="">请选择</option>
-              <option value="agent">代理商</option>
-              <option value="channel">渠道商</option>
-            </select>
-          </div>
-          <div class="form-item" id="agentLevel-withdraw" style="display: none;">
-            <label>代理商层级：</label>
-            <select>
-              <option value="">请选择</option>
-              <option value="1级">1级</option>
-              <option value="2级">2级</option>
-              <option value="3级">3级</option>
-            </select>
-          </div>
-          <div class="form-item" id="channelLevel-withdraw" style="display: none;">
-            <label>渠道商层级：</label>
-            <select>
-              <option value="">请选择</option>
-              <option value="A级">A级</option>
-              <option value="B级">B级</option>
-            </select>
-          </div>
           <div class="form-item">
             <label>服务商号：</label>
             <input type="text" placeholder="请输入">
@@ -884,7 +859,7 @@
         </div>
       </div>
 
-      <!-- 表格区域 - 层级严格区分：1/2/3级=代理商，A/B级=渠道商 -->
+      <!-- 表格区域 - 保留表头的服务商类型和服务商层级字段 -->
       <div class="table-container">
         <div class="table-actions">
           <button class="btn btn-primary">导出</button>
@@ -1127,24 +1102,6 @@
         } else {
           // 清空选择时显示渠道商默认表头
           initProfitTableHeader();
-        }
-      });
-    }
-
-    // 表单联动：选择服务商类型，显示对应层级选择框（取现查询）
-    const serviceTypeWithdraw = document.getElementById('serviceType-withdraw');
-    const agentLevelWithdraw = document.getElementById('agentLevel-withdraw');
-    const channelLevelWithdraw = document.getElementById('channelLevel-withdraw');
-    
-    if (serviceTypeWithdraw) {
-      serviceTypeWithdraw.addEventListener('change', () => {
-        agentLevelWithdraw.style.display = 'none';
-        channelLevelWithdraw.style.display = 'none';
-        
-        if (serviceTypeWithdraw.value === 'agent') {
-          agentLevelWithdraw.style.display = 'flex';
-        } else if (serviceTypeWithdraw.value === 'channel') {
-          channelLevelWithdraw.style.display = 'flex';
         }
       });
     }
