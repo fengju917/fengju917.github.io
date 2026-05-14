@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>汇来米内控运营控台</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        primary: '#1677ff',
+        primaryHover: '#4096ff',
+        danger: '#ff4d4f',
+        dangerHover: '#ff7875',
+        bg: '#f5f5f5',
+        card: '#ffffff',
+        border: '#e8e8e8',
+        textPrimary: '#262626',
+        textSecondary: '#8c8c8c',
+        sidebarBg: '#001529',
+        sidebarHover: '#000c17',
+        sidebarActive: '#1677ff',
+      }
+    }
+  }
+}
+</script>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; }
+  .modal-overlay { transition: opacity .2s; }
+  .modal-overlay.hidden { opacity: 0; pointer-events: none; }
+  .modal-box { transition: transform .2s, opacity .2s; }
+  .modal-overlay.hidden .modal-box { transform: translateY(20px); opacity: 0; }
+  .tab-active { color: #1677ff; border-bottom: 2px solid #1677ff; }
+  table { border-collapse: collapse; }
+  th, td { border: 1px solid #f0f0f0; }
+  .upload-zone { border: 2px dashed #d9d9d9; transition: border-color .2s; }
+  .upload-zone:hover { border-color: #1677ff; }
+  .toast { animation: toastIn .3s ease, toastOut .3s ease 1.7s forwards; }
+  @keyframes toastIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  @keyframes toastOut { from { opacity: 1; } to { opacity: 0; } }
+  .menu-sub { max-height: 0; overflow: hidden; transition: max-height .25s ease; }
+  .menu-sub.open { max-height: 200px; }
+  .menu-arrow { transition: transform .25s ease; }
+  .menu-arrow.open { transform: rotate(90deg); }
+</style>
+</head>
+<body class="bg-bg min-h-screen">
+
+<!-- Toast Container -->
+<div id="toastContainer" class="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-2"></div>
+
+<!-- Layout: Sidebar + Main -->
+<div class="flex min-h-screen">
+
+  <!-- Sidebar -->
+  <div class="w-52 bg-sidebarBg flex flex-col flex-shrink-0">
+    <!-- Logo -->
+    <div class="h-14 flex items-center px-5 border-b border-white/10">
+      <span class="text-white text-base font-semibold tracking-wide">汇来米内控运营控台</span>
+    </div>
+    <!-- Menu -->
+    <nav class="flex-1 py-2 overflow-y-auto">
+      <!-- 政策中心 -->
+      <div>
+        <div onclick="toggleMenu('policy')" class="flex items-center justify-between px-5 py-3 cursor-pointer text-gray-300 hover:text-white hover:bg-sidebarHover transition-colors">
+          <div class="flex items-center gap-3">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <span class="text-sm">政策中心</span>
+          </div>
+          <svg id="arrow-policy" class="menu-arrow open w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+        </div>
+        <div id="sub-policy" class="menu-sub open bg-black/20">
+          <a onclick="switchPage('pengyixia')" id="menu-pengyixia" class="menu-item block pl-12 pr-5 py-2.5 text-sm text-gray-400 hover:text-white hover:bg-sidebarHover cursor-pointer transition-colors sidebar-active">碰一下首笔交易拦截管理</a>
+        </div>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col min-w-0">
+
+    <!-- Top Header -->
+    <div class="bg-card border-b border-border h-14 flex items-center px-6 flex-shrink-0">
+      <span id="pageTitle" class="text-sm text-textSecondary">政策中心 / 碰一下首笔交易拦截管理</span>
+    </div>
+
+    <!-- Content Area -->
+    <div class="flex-1 overflow-y-auto">
+
+      <!-- Page: 碰一下首笔交易拦截管理 -->
+      <div id="page-pengyixia" class="page-content px-6 py-5">
+        <div class="mb-4">
+          <h2 class="text-lg font-semibold text-textPrimary">碰一下首笔交易拦截管理</h2>
+          <p class="text-sm text-textSecondary mt-1">管理碰一下首笔交易拦截的设备机型与白名单，控制拦截策略与豁免规则。</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="bg-card border border-border rounded-t-lg border-b-0">
+          <div class="px-4 flex gap-6">
+            <button class="tab-btn tab-active py-3 px-1 text-sm font-medium transition-colors" data-tab="device">拦截机型管理</button>
+            <button class="tab-btn py-3 px-1 text-sm font-medium text-textSecondary hover:text-primary transition-colors" data-tab="whitelist">白名单管理</button>
+          </div>
+        </div>
+
+        <!-- Module 1: 拦截机型管理 -->
+        <div id="tab-device" class="tab-panel">
+          <!-- Search Bar -->
+          <div class="bg-card border-x border-border p-4 flex flex-wrap items-end gap-4">
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-textSecondary">设备类型</label>
+              <select id="deviceFilterType" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[140px]">
+                <option value="">全部</option>
+                <option value="反扫">反扫</option>
+                <option value="正扫">正扫</option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-textSecondary">机型名称</label>
+              <input id="deviceFilterName" type="text" placeholder="请输入机型名称" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[180px]">
+            </div>
+            <button onclick="filterDevices()" class="bg-primary text-white px-4 py-1.5 rounded text-sm hover:bg-primaryHover transition-colors">查询</button>
+            <button onclick="resetDeviceFilter()" class="border border-gray-300 text-textSecondary px-4 py-1.5 rounded text-sm hover:border-primary hover:text-primary transition-colors">重置</button>
+            <div class="ml-auto">
+              <button onclick="openDeviceModal()" class="bg-primary text-white px-4 py-1.5 rounded text-sm hover:bg-primaryHover transition-colors">+ 新增机型</button>
+            </div>
+          </div>
+          <!-- Table -->
+          <div class="bg-card border border-border rounded-b-lg overflow-hidden">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="bg-gray-50 text-textSecondary">
+                  <th class="px-4 py-3 text-left font-medium w-16">序号</th>
+                  <th class="px-4 py-3 text-left font-medium w-28">设备类型</th>
+                  <th class="px-4 py-3 text-left font-medium">机型名称</th>
+                  <th class="px-4 py-3 text-left font-medium w-44">创建时间</th>
+                  <th class="px-4 py-3 text-left font-medium w-24">操作</th>
+                </tr>
+              </thead>
+              <tbody id="deviceTableBody"></tbody>
+            </table>
+            <div id="deviceEmpty" class="hidden py-12 text-center text-textSecondary text-sm">暂无数据</div>
+          </div>
+        </div>
+
+        <!-- Module 2: 白名单管理 -->
+        <div id="tab-whitelist" class="tab-panel hidden">
+          <!-- Notice -->
+          <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-4 text-sm text-blue-700 leading-relaxed">
+            加入白名单后，该设备号 / 代理商号 / 直属渠道号下的设备，无需校验是否存在首笔 ≥2 元碰一下交易，可直接正常交易。
+          </div>
+          <!-- Search Bar -->
+          <div class="bg-card border border-border rounded-lg p-4 mb-4 flex flex-wrap items-end gap-4">
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-textSecondary">白名单类型</label>
+              <select id="wlFilterType" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[140px]">
+                <option value="">全部</option>
+                <option value="设备号">设备号</option>
+                <option value="代理商号">代理商号</option>
+                <option value="直属渠道号">直属渠道号</option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-textSecondary">号码</label>
+              <input id="wlFilterCode" type="text" placeholder="请输入号码" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[180px]">
+            </div>
+            <button onclick="filterWhitelist()" class="bg-primary text-white px-4 py-1.5 rounded text-sm hover:bg-primaryHover transition-colors">查询</button>
+            <button onclick="resetWlFilter()" class="border border-gray-300 text-textSecondary px-4 py-1.5 rounded text-sm hover:border-primary hover:text-primary transition-colors">重置</button>
+            <div class="ml-auto flex gap-2">
+              <button onclick="openBatchModal()" class="border border-primary text-primary px-4 py-1.5 rounded text-sm hover:bg-blue-50 transition-colors">批量导入</button>
+              <button onclick="openWlModal()" class="bg-primary text-white px-4 py-1.5 rounded text-sm hover:bg-primaryHover transition-colors">+ 新增白名单</button>
+            </div>
+          </div>
+          <!-- Table -->
+          <div class="bg-card rounded-lg border border-border overflow-hidden">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="bg-gray-50 text-textSecondary">
+                  <th class="px-4 py-3 text-left font-medium w-16">序号</th>
+                  <th class="px-4 py-3 text-left font-medium w-28">白名单类型</th>
+                  <th class="px-4 py-3 text-left font-medium">号码</th>
+                  <th class="px-4 py-3 text-left font-medium">备注</th>
+                  <th class="px-4 py-3 text-left font-medium w-44">创建时间</th>
+                  <th class="px-4 py-3 text-left font-medium w-24">操作</th>
+                </tr>
+              </thead>
+              <tbody id="wlTableBody"></tbody>
+            </table>
+            <div id="wlEmpty" class="hidden py-12 text-center text-textSecondary text-sm">暂无数据</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add Device -->
+<div id="deviceModal" class="modal-overlay hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+  <div class="modal-box bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+      <h3 class="text-base font-medium text-textPrimary">新增机型</h3>
+      <button onclick="closeDeviceModal()" class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+    </div>
+    <div class="px-6 py-5 space-y-4">
+      <div class="flex flex-col gap-1.5">
+        <label class="text-sm text-textPrimary">设备类型 <span class="text-danger">*</span></label>
+        <select id="addDeviceType" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary">
+          <option value="">请选择</option>
+          <option value="反扫">反扫</option>
+          <option value="正扫">正扫</option>
+        </select>
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label class="text-sm text-textPrimary">机型名称 <span class="text-danger">*</span></label>
+        <input id="addDeviceName" type="text" placeholder="请输入机型名称" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary">
+      </div>
+    </div>
+    <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
+      <button onclick="closeDeviceModal()" class="border border-gray-300 text-textSecondary px-4 py-1.5 rounded text-sm hover:border-primary hover:text-primary transition-colors">取消</button>
+      <button onclick="addDevice()" class="bg-primary text-white px-4 py-1.5 rounded text-sm hover:bg-primaryHover transition-colors">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add Whitelist -->
+<div id="wlModal" class="modal-overlay hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+  <div class="modal-box bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+      <h3 class="text-base font-medium text-textPrimary">新增白名单</h3>
+      <button onclick="closeWlModal()" class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+    </div>
+    <div class="px-6 py-5 space-y-4">
+      <div class="flex flex-col gap-1.5">
+        <label class="text-sm text-textPrimary">白名单类型 <span class="text-danger">*</span></label>
+        <select id="addWlType" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary">
+          <option value="">请选择</option>
+          <option value="设备号">设备号</option>
+          <option value="代理商号">代理商号</option>
+          <option value="直属渠道号">直属渠道号</option>
+        </select>
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label class="text-sm text-textPrimary">号码 <span class="text-danger">*</span></label>
+        <input id="addWlCode" type="text" placeholder="请输入号码" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary">
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label class="text-sm text-textPrimary">备注</label>
+        <input id="addWlRemark" type="text" placeholder="选填" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary">
+      </div>
+    </div>
+    <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
+      <button onclick="closeWlModal()" class="border border-gray-300 text-textSecondary px-4 py-1.5 rounded text-sm hover:border-primary hover:text-primary transition-colors">取消</button>
+      <button onclick="addWhitelist()" class="bg-primary text-white px-4 py-1.5 rounded text-sm hover:bg-primaryHover transition-colors">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Batch Import -->
+<div id="batchModal" class="modal-overlay hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+  <div class="modal-box bg-white rounded-lg shadow-xl w-full max-w-lg mx-4">
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+      <h3 class="text-base font-medium text-textPrimary">批量导入白名单</h3>
+      <button onclick="closeBatchModal()" class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+    </div>
+    <div class="px-6 py-5 space-y-4">
+      <div class="bg-gray-50 rounded p-4 text-sm text-textSecondary leading-relaxed">
+        <p class="font-medium text-textPrimary mb-2">模板格式说明：</p>
+        <p>请按以下列顺序填写数据，支持 .csv 和 .xlsx 格式：</p>
+        <div class="mt-2 bg-white rounded border border-gray-200 px-3 py-2 font-mono text-xs">
+          <div class="font-semibold text-textPrimary mb-1">白名单类型, 号码, 备注</div>
+          <div>设备号, SN20240001, 测试设备</div>
+          <div>代理商号, AGT00556, --</div>
+        </div>
+      </div>
+      <button onclick="downloadTemplate()" class="text-primary text-sm hover:underline font-medium">↓ 下载模板</button>
+      <div class="upload-zone rounded-lg p-8 text-center cursor-pointer" onclick="document.getElementById('batchFile').click()">
+        <input id="batchFile" type="file" accept=".csv,.xlsx,.xls" class="hidden" onchange="handleBatchUpload(event)">
+        <div class="text-textSecondary text-sm">点击或拖拽文件至此处上传</div>
+        <div class="text-xs text-textSecondary mt-1">支持 .csv / .xlsx / .xls</div>
+      </div>
+      <div id="uploadResult" class="hidden text-sm text-green-600 bg-green-50 border border-green-100 rounded p-3"></div>
+    </div>
+    <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
+      <button onclick="closeBatchModal()" class="border border-gray-300 text-textSecondary px-4 py-1.5 rounded text-sm hover:border-primary hover:text-primary transition-colors">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div id="confirmModal" class="modal-overlay hidden fixed inset-0 bg-black/40 z-[60] flex items-center justify-center">
+  <div class="modal-box bg-white rounded-lg shadow-xl w-full max-w-sm mx-4">
+    <div class="px-6 py-5">
+      <p id="confirmMsg" class="text-sm text-textPrimary"></p>
+    </div>
+    <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
+      <button onclick="cancelConfirm()" class="border border-gray-300 text-textSecondary px-4 py-1.5 rounded text-sm hover:border-primary hover:text-primary transition-colors">取消</button>
+      <button onclick="doConfirm()" class="bg-danger text-white px-4 py-1.5 rounded text-sm hover:bg-dangerHover transition-colors">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// --- Data ---
+const now = () => new Date().toLocaleString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' }).replace(/\//g, '-');
+
+let deviceList = [
+  { id: 1, type: '反扫', name: '如意 NFC版', createdAt: '2025-12-01 10:30:00' },
+  { id: 2, type: '反扫', name: '如意N7HM', createdAt: '2025-12-02 14:20:00' },
+  { id: 3, type: '反扫', name: 'N7HD', createdAt: '2025-12-03 09:15:00' },
+  { id: 4, type: '正扫', name: 'NS20_PRO', createdAt: '2025-12-04 16:45:00' },
+  { id: 5, type: '正扫', name: 'ZFB-NFC', createdAt: '2025-12-05 11:00:00' },
+  { id: 6, type: '正扫', name: 'DZFB-NFC', createdAt: '2025-12-06 08:30:00' },
+];
+let deviceIdSeq = 7;
+
+let wlList = [
+  { id: 1, type: '设备号', code: 'SN20240001', remark: '线下测试设备', createdAt: '2025-11-20 09:00:00' },
+  { id: 2, type: '设备号', code: 'SN20240088', remark: '展厅演示机', createdAt: '2025-11-21 14:30:00' },
+  { id: 3, type: '代理商号', code: 'AGT00556', remark: '核心代理商', createdAt: '2025-11-22 10:15:00' },
+  { id: 4, type: '代理商号', code: 'AGT00912', remark: '战略伙伴', createdAt: '2025-11-23 16:00:00' },
+  { id: 5, type: '直属渠道号', code: 'CH001234', remark: '总部直营', createdAt: '2025-11-24 11:45:00' },
+  { id: 6, type: '直属渠道号', code: 'CH005678', remark: '华东渠道', createdAt: '2025-11-25 08:20:00' },
+];
+let wlIdSeq = 7;
+
+let confirmCallback = null;
+
+// --- Sidebar Menu ---
+function toggleMenu(key) {
+  const sub = document.getElementById('sub-' + key);
+  const arrow = document.getElementById('arrow-' + key);
+  sub.classList.toggle('open');
+  arrow.classList.toggle('open');
+}
+
+function switchPage(page) {
+  document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
+  document.getElementById('page-' + page).classList.remove('hidden');
+  document.querySelectorAll('.menu-item').forEach(m => {
+    m.classList.remove('sidebar-active', 'text-white', 'bg-sidebarActive/20');
+    m.classList.add('text-gray-400');
+  });
+  const active = document.getElementById('menu-' + page);
+  if (active) {
+    active.classList.add('sidebar-active', 'text-white', 'bg-sidebarActive/20');
+    active.classList.remove('text-gray-400');
+  }
+  const titles = { pengyixia: '政策中心 / 碰一下首笔交易拦截管理' };
+  document.getElementById('pageTitle').textContent = titles[page] || '';
+}
+
+// Style active sidebar item on load
+document.querySelectorAll('.menu-item.sidebar-active').forEach(m => {
+  m.classList.add('text-white', 'bg-sidebarActive/20');
+  m.classList.remove('text-gray-400');
+});
+
+// --- Tabs ---
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('tab-active'); b.classList.add('text-textSecondary'); });
+    btn.classList.add('tab-active'); btn.classList.remove('text-textSecondary');
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+    document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
+  });
+});
+
+// --- Toast ---
+function showToast(msg, type = 'success') {
+  const colors = { success: 'bg-green-500', error: 'bg-red-500', info: 'bg-primary' };
+  const el = document.createElement('div');
+  el.className = `toast ${colors[type] || colors.info} text-white px-5 py-2.5 rounded shadow-lg text-sm`;
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 2200);
+}
+
+// --- Device Module ---
+function renderDevices(data) {
+  const tbody = document.getElementById('deviceTableBody');
+  const empty = document.getElementById('deviceEmpty');
+  if (!data.length) { tbody.innerHTML = ''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  tbody.innerHTML = data.map((d, i) => `
+    <tr class="hover:bg-gray-50 transition-colors">
+      <td class="px-4 py-3 text-textSecondary">${i + 1}</td>
+      <td class="px-4 py-3"><span class="inline-block px-2 py-0.5 rounded text-xs font-medium ${d.type === '反扫' ? 'bg-orange-50 text-orange-600' : 'bg-blue-50 text-blue-600'}">${d.type}</span></td>
+      <td class="px-4 py-3 text-textPrimary font-medium">${d.name}</td>
+      <td class="px-4 py-3 text-textSecondary">${d.createdAt}</td>
+      <td class="px-4 py-3"><button onclick="confirmDeleteDevice(${d.id})" class="text-danger hover:text-dangerHover text-sm transition-colors">删除</button></td>
+    </tr>`).join('');
+}
+
+function filterDevices() {
+  const t = document.getElementById('deviceFilterType').value;
+  const n = document.getElementById('deviceFilterName').value.trim().toLowerCase();
+  renderDevices(deviceList.filter(d => (!t || d.type === t) && (!n || d.name.toLowerCase().includes(n))));
+}
+
+function resetDeviceFilter() {
+  document.getElementById('deviceFilterType').value = '';
+  document.getElementById('deviceFilterName').value = '';
+  renderDevices(deviceList);
+}
+
+function openDeviceModal() {
+  document.getElementById('addDeviceType').value = '';
+  document.getElementById('addDeviceName').value = '';
+  document.getElementById('deviceModal').classList.remove('hidden');
+}
+
+function closeDeviceModal() { document.getElementById('deviceModal').classList.add('hidden'); }
+
+function addDevice() {
+  const type = document.getElementById('addDeviceType').value;
+  const name = document.getElementById('addDeviceName').value.trim();
+  if (!type || !name) { showToast('请填写完整信息', 'error'); return; }
+  deviceList.push({ id: deviceIdSeq++, type, name, createdAt: now() });
+  closeDeviceModal();
+  filterDevices();
+  showToast('机型添加成功');
+}
+
+function confirmDeleteDevice(id) {
+  const d = deviceList.find(x => x.id === id);
+  showConfirm(`确定要删除机型「${d.name}」吗？`, () => {
+    deviceList = deviceList.filter(x => x.id !== id);
+    filterDevices();
+    showToast('删除成功');
+  });
+}
+
+// --- Whitelist Module ---
+function renderWhitelist(data) {
+  const tbody = document.getElementById('wlTableBody');
+  const empty = document.getElementById('wlEmpty');
+  if (!data.length) { tbody.innerHTML = ''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  const typeColors = { '设备号': 'bg-purple-50 text-purple-600', '代理商号': 'bg-green-50 text-green-600', '直属渠道号': 'bg-cyan-50 text-cyan-600' };
+  tbody.innerHTML = data.map((d, i) => `
+    <tr class="hover:bg-gray-50 transition-colors">
+      <td class="px-4 py-3 text-textSecondary">${i + 1}</td>
+      <td class="px-4 py-3"><span class="inline-block px-2 py-0.5 rounded text-xs font-medium ${typeColors[d.type] || ''}">${d.type}</span></td>
+      <td class="px-4 py-3 text-textPrimary font-mono text-xs">${d.code}</td>
+      <td class="px-4 py-3 text-textSecondary">${d.remark || '--'}</td>
+      <td class="px-4 py-3 text-textSecondary">${d.createdAt}</td>
+      <td class="px-4 py-3"><button onclick="confirmDeleteWl(${d.id})" class="text-danger hover:text-dangerHover text-sm transition-colors">删除</button></td>
+    </tr>`).join('');
+}
+
+function filterWhitelist() {
+  const t = document.getElementById('wlFilterType').value;
+  const c = document.getElementById('wlFilterCode').value.trim().toLowerCase();
+  renderWhitelist(wlList.filter(d => (!t || d.type === t) && (!c || d.code.toLowerCase().includes(c))));
+}
+
+function resetWlFilter() {
+  document.getElementById('wlFilterType').value = '';
+  document.getElementById('wlFilterCode').value = '';
+  renderWhitelist(wlList);
+}
+
+function openWlModal() {
+  document.getElementById('addWlType').value = '';
+  document.getElementById('addWlCode').value = '';
+  document.getElementById('addWlRemark').value = '';
+  document.getElementById('wlModal').classList.remove('hidden');
+}
+
+function closeWlModal() { document.getElementById('wlModal').classList.add('hidden'); }
+
+function addWhitelist() {
+  const type = document.getElementById('addWlType').value;
+  const code = document.getElementById('addWlCode').value.trim();
+  const remark = document.getElementById('addWlRemark').value.trim();
+  if (!type || !code) { showToast('请填写完整信息', 'error'); return; }
+  wlList.push({ id: wlIdSeq++, type, code, remark, createdAt: now() });
+  closeWlModal();
+  filterWhitelist();
+  showToast('白名单添加成功');
+}
+
+function confirmDeleteWl(id) {
+  const d = wlList.find(x => x.id === id);
+  showConfirm(`确定要删除「${d.code}」吗？`, () => {
+    wlList = wlList.filter(x => x.id !== id);
+    filterWhitelist();
+    showToast('删除成功');
+  });
+}
+
+// --- Batch Import ---
+function openBatchModal() {
+  document.getElementById('uploadResult').classList.add('hidden');
+  document.getElementById('batchFile').value = '';
+  document.getElementById('batchModal').classList.remove('hidden');
+}
+
+function closeBatchModal() { document.getElementById('batchModal').classList.add('hidden'); }
+
+function downloadTemplate() { showToast('模板下载成功'); }
+
+function handleBatchUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const mockRows = [
+    { type: '设备号', code: 'SN' + Math.floor(Math.random() * 90000 + 10000), remark: '批量导入' },
+    { type: '代理商号', code: 'AGT' + Math.floor(Math.random() * 900 + 100), remark: '批量导入' },
+    { type: '直属渠道号', code: 'CH' + Math.floor(Math.random() * 9000 + 1000), remark: '批量导入' },
+  ];
+  mockRows.forEach(r => { wlList.push({ id: wlIdSeq++, ...r, createdAt: now() }); });
+  const result = document.getElementById('uploadResult');
+  result.textContent = `文件「${file.name}」解析成功，已导入 ${mockRows.length} 条记录`;
+  result.classList.remove('hidden');
+  filterWhitelist();
+  showToast('批量导入成功，共 ' + mockRows.length + ' 条');
+}
+
+// --- Confirm Modal ---
+function showConfirm(msg, cb) {
+  document.getElementById('confirmMsg').textContent = msg;
+  confirmCallback = cb;
+  document.getElementById('confirmModal').classList.remove('hidden');
+}
+
+function cancelConfirm() {
+  confirmCallback = null;
+  document.getElementById('confirmModal').classList.add('hidden');
+}
+
+function doConfirm() {
+  if (confirmCallback) confirmCallback();
+  confirmCallback = null;
+  document.getElementById('confirmModal').classList.add('hidden');
+}
+
+// --- Close modals on overlay click ---
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.add('hidden');
+  });
+});
+
+// --- Init ---
+renderDevices(deviceList);
+renderWhitelist(wlList);
+</script>
+</body>
+</html>
