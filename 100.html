@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>汇来米内控运营控台</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        primary: '#1677ff',
+        primaryHover: '#4096ff',
+        danger: '#ff4d4f',
+        dangerHover: '#ff7875',
+        bg: '#f5f5f5',
+        card: '#ffffff',
+        border: '#e8e8e8',
+        textPrimary: '#262626',
+        textSecondary: '#8c8c8c',
+        sidebarBg: '#001529',
+        sidebarHover: '#000c17',
+        sidebarActive: '#1677ff',
+      }
+    }
+  }
+}
+</script>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; }
+.modal-overlay { transition: opacity .2s; }
+.modal-overlay.hidden { opacity: 0; pointer-events: none; }
+.modal-box { transition: transform .2s, opacity .2s; }
+.modal-overlay.hidden .modal-box { transform: translateY(20px); opacity: 0; }
+.toast { animation: toastIn .3s ease, toastOut .3s ease 1.7s forwards; }
+@keyframes toastIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes toastOut { from { opacity: 1; } to { opacity: 0; } }
+.menu-sub { max-height: 0; overflow: hidden; transition: max-height .25s ease; }
+.menu-sub.open { max-height: 200px; }
+.menu-arrow { transition: transform .25s ease; }
+.menu-arrow.open { transform: rotate(90deg); }
+table { border-collapse: collapse; }
+th, td { border: 1px solid #f0f0f0; }
+.tag-item { display: inline-flex; align-items: center; gap: 4px; background: #f0f5ff; border: 1px solid #adc6ff; color: #1677ff; padding: 2px 8px; border-radius: 4px; font-size: 12px; line-height: 20px; }
+.tag-item .tag-close { cursor: pointer; font-size: 14px; line-height: 1; color: #1677ff; opacity: .6; }
+.tag-item .tag-close:hover { opacity: 1; }
+.tag-input-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; border: 1px solid #d9d9d9; border-radius: 6px; padding: 4px 8px; min-height: 36px; cursor: text; transition: border-color .2s; }
+.tag-input-wrap:focus-within { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,.1); }
+.tag-input-wrap input { flex: 1; min-width: 80px; border: none; outline: none; font-size: 13px; padding: 2px 0; background: transparent; }
+.section-title { font-size: 14px; font-weight: 600; color: #262626; padding-bottom: 8px; margin-bottom: 16px; border-bottom: 1px solid #f0f0f0; }
+.detail-section { margin-bottom: 20px; }
+.detail-section-title { font-size: 13px; font-weight: 600; color: #262626; padding: 8px 0; margin-bottom: 12px; border-bottom: 1px dashed #e8e8e8; }
+.form-scroll { max-height: 65vh; overflow-y: auto; }
+</style>
+</head>
+<body class="bg-bg min-h-screen">
+
+<!-- Toast Container -->
+<div id="toastContainer" class="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-2"></div>
+
+<!-- Layout: Sidebar + Main -->
+<div class="flex min-h-screen">
+
+  <!-- Sidebar -->
+  <div class="w-52 bg-sidebarBg flex flex-col flex-shrink-0">
+    <div class="h-14 flex items-center px-5 border-b border-white/10">
+      <span class="text-white text-base font-semibold tracking-wide">汇来米内控运营控台</span>
+    </div>
+    <nav class="flex-1 py-2 overflow-y-auto">
+      <a class="flex items-center gap-3 px-5 py-3 text-sm text-white bg-sidebarActive/20 cursor-pointer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        <span>交易电子围栏拦截策略管理</span>
+      </a>
+    </nav>
+  </div>
+
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col min-w-0">
+
+    <!-- Top Header -->
+    <div class="bg-card border-b border-border h-14 flex items-center px-6 flex-shrink-0">
+      <span class="text-sm text-textSecondary">交易电子围栏拦截策略管理</span>
+    </div>
+
+    <!-- Content Area -->
+    <div class="flex-1 overflow-y-auto">
+      <div class="px-6 py-5">
+
+        <!-- Page Title -->
+        <div class="mb-4">
+          <h2 class="text-lg font-semibold text-textPrimary">交易电子围栏 - 拦截策略管理</h2>
+          <p class="text-sm text-textSecondary mt-1">管理交易电子围栏拦截策略，配置区域、商户类型及适用范围，控制拦截行为。</p>
+        </div>
+
+        <!-- Query Filter Bar -->
+        <div class="bg-card border border-border rounded-lg p-4 mb-4 flex flex-wrap items-end gap-4">
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-textSecondary">策略号</label>
+            <input id="filterStrategyNo" type="text" placeholder="请输入策略号" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[140px]">
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-textSecondary">策略名称</label>
+            <input id="filterStrategyName" type="text" placeholder="请输入策略名称" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[160px]">
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-textSecondary">渠道号</label>
+            <input id="filterChannelNo" type="text" placeholder="精确匹配" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[120px]">
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-textSecondary">商户号</label>
+            <input id="filterMerchantNo" type="text" placeholder="精确匹配" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[120px]">
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-textSecondary">状态</label>
+            <select id="filterStatus" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[100px]">
+              <option value="">全部</option>
+              <option value="启用">启用</option>
+              <option value="停用">停用</option>
+            </select>
+          </div>
+          <button onclick="filterList()" class="bg-primary text-white px-4 py-1.5 rounded text-sm hover:bg-primaryHover transition-colors">查询</button>
+          <button onclick="resetFilter()" class="border border-gray-300 text-textSecondary px-4 py-1.5 rounded text-sm hover:border-primary hover:text-primary transition-colors">重置</button>
+          <div class="ml-auto">
+            <button onclick="openAddModal()" class="bg-primary text-white px-4 py-1.5 rounded text-sm hover:bg-primaryHover transition-colors">+ 新增策略</button>
+          </div>
+        </div>
+
+        <!-- Strategy Table -->
+        <div class="bg-card border border-border rounded-lg overflow-hidden">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-gray-50 text-textSecondary">
+                <th class="px-3 py-3 text-left font-medium">策略号</th>
+                <th class="px-3 py-3 text-left font-medium">策略名称</th>
+                <th class="px-3 py-3 text-left font-medium">区域维度</th>
+                <th class="px-3 py-3 text-left font-medium">定位方式</th>
+                <th class="px-3 py-3 text-left font-medium">商户类型</th>
+                <th class="px-3 py-3 text-left font-medium">状态</th>
+                <th class="px-3 py-3 text-left font-medium">操作人</th>
+                <th class="px-3 py-3 text-left font-medium">更新时间</th>
+                <th class="px-3 py-3 text-left font-medium">操作</th>
+              </tr>
+            </thead>
+            <tbody id="strategyTableBody"></tbody>
+          </table>
+          <div id="emptyTip" class="hidden py-12 text-center text-textSecondary text-sm">暂无数据</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add / Edit Strategy -->
+<div id="formModal" class="modal-overlay hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+  <div class="modal-box bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 flex flex-col max-h-[85vh]">
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+      <h3 id="formModalTitle" class="text-base font-medium text-textPrimary">新增策略</h3>
+      <button onclick="closeFormModal()" class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+    </div>
+    <div class="form-scroll px-6 py-5 flex-1">
+
+      <!-- ① 基本信息 -->
+      <div class="mb-6">
+        <div class="section-title">① 基本信息</div>
+        <div class="space-y-4">
+          <div class="flex flex-col gap-1.5">
+            <label class="text-sm text-textPrimary">策略名称 <span class="text-danger">*</span></label>
+            <input id="formName" type="text" placeholder="请输入策略名称" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary">
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-sm text-textPrimary">备注</label>
+            <textarea id="formRemark" rows="2" placeholder="选填" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- ② 区域配置 -->
+      <div class="mb-6">
+        <div class="section-title">② 区域配置</div>
+        <div class="space-y-4">
+          <div class="flex flex-col gap-1.5">
+            <label class="text-sm text-textPrimary">地理位置转换方式 <span class="text-danger">*</span></label>
+            <div class="flex gap-4">
+              <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+                <input type="radio" name="locationMethod" value="经纬度" class="accent-primary" onchange="onLocationMethodChange()"> 经纬度
+              </label>
+              <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+                <input type="radio" name="locationMethod" value="IP" class="accent-primary" onchange="onLocationMethodChange()"> IP
+              </label>
+            </div>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-sm text-textPrimary">区域维度 <span class="text-danger">*</span></label>
+            <div class="flex gap-4">
+              <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+                <input type="radio" name="areaDimension" value="省" class="accent-primary" onchange="onDimensionChange()"> 省
+              </label>
+              <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+                <input type="radio" name="areaDimension" value="市" class="accent-primary" onchange="onDimensionChange()"> 市
+              </label>
+              <label id="dimensionDistanceLabel" class="flex items-center gap-1.5 text-sm cursor-pointer">
+                <input type="radio" name="areaDimension" value="距离" class="accent-primary" onchange="onDimensionChange()"> 距离
+              </label>
+            </div>
+          </div>
+          <div id="distanceInputWrap" class="flex flex-col gap-1.5 hidden">
+            <label class="text-sm text-textPrimary">距离（米） <span class="text-danger">*</span></label>
+            <input id="formDistance" type="number" min="1" placeholder="请输入距离，单位米" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary w-48">
+          </div>
+        </div>
+      </div>
+
+      <!-- ③ 商户类型 -->
+      <div class="mb-6">
+        <div class="section-title">③ 商户类型</div>
+        <div class="flex gap-4">
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+            <input type="radio" name="merchantType" value="小微" class="accent-primary"> 小微
+          </label>
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+            <input type="radio" name="merchantType" value="非小微" class="accent-primary"> 非小微
+          </label>
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+            <input type="radio" name="merchantType" value="全部" class="accent-primary"> 全部
+          </label>
+        </div>
+      </div>
+
+      <!-- ④ 适用范围 -->
+      <div class="mb-6">
+        <div class="section-title">④ 适用范围</div>
+        <p class="text-xs text-textSecondary mb-3">配置后策略仅对以下范围生效；不配置则视为全量适用。同一渠道号或商户号仅能出现在一个策略的适用范围中</p>
+        <div class="space-y-4">
+          <div class="flex flex-col gap-1.5">
+            <label class="text-sm text-textPrimary">适用渠道号</label>
+            <div id="tagWrap-applyChannel" class="tag-input-wrap" onclick="focusTagInput('applyChannel')">
+              <input id="tagInput-applyChannel" type="text" placeholder="输入后回车或逗号添加" onkeydown="handleTagKey(event,'applyChannel')">
+            </div>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-sm text-textPrimary">适用商户号</label>
+            <div id="tagWrap-applyMerchant" class="tag-input-wrap" onclick="focusTagInput('applyMerchant')">
+              <input id="tagInput-applyMerchant" type="text" placeholder="输入后回车或逗号添加" onkeydown="handleTagKey(event,'applyMerchant')">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ⑤ 不适用范围 -->
+      <div class="mb-6">
+        <div class="section-title">⑤ 不适用范围</div>
+        <p class="text-xs text-textSecondary mb-3">配置后以下范围即使在拦截区域内也不执行拦截</p>
+        <div class="space-y-4">
+          <div class="flex flex-col gap-1.5">
+            <label class="text-sm text-textPrimary">不适用渠道号</label>
+            <div id="tagWrap-excludeChannel" class="tag-input-wrap" onclick="focusTagInput('excludeChannel')">
+              <input id="tagInput-excludeChannel" type="text" placeholder="输入后回车或逗号添加" onkeydown="handleTagKey(event,'excludeChannel')">
+            </div>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-sm text-textPrimary">不适用商户号</label>
+            <div id="tagWrap-excludeMerchant" class="tag-input-wrap" onclick="focusTagInput('excludeMerchant')">
+              <input id="tagInput-excludeMerchant" type="text" placeholder="输入后回车或逗号添加" onkeydown="handleTagKey(event,'excludeMerchant')">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ⑥ 策略状态 -->
+      <div class="mb-2">
+        <div class="section-title">⑥ 策略状态</div>
+        <div class="flex gap-4">
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+            <input type="radio" name="formStatus" value="启用" class="accent-primary" checked> 启用
+          </label>
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+            <input type="radio" name="formStatus" value="停用" class="accent-primary"> 停用
+          </label>
+        </div>
+      </div>
+
+    </div>
+    <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2 flex-shrink-0">
+      <button onclick="closeFormModal()" class="border border-gray-300 text-textSecondary px-4 py-1.5 rounded text-sm hover:border-primary hover:text-primary transition-colors">取消</button>
+      <button onclick="submitForm()" class="bg-primary text-white px-4 py-1.5 rounded text-sm hover:bg-primaryHover transition-colors">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: View Detail -->
+<div id="detailModal" class="modal-overlay hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+  <div class="modal-box bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 flex flex-col max-h-[85vh]">
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+      <h3 class="text-base font-medium text-textPrimary">策略详情</h3>
+      <button onclick="closeDetailModal()" class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+    </div>
+    <div id="detailContent" class="form-scroll px-6 py-5 flex-1"></div>
+    <div class="px-6 py-4 border-t border-gray-100 flex justify-end flex-shrink-0">
+      <button onclick="closeDetailModal()" class="border border-gray-300 text-textSecondary px-4 py-1.5 rounded text-sm hover:border-primary hover:text-primary transition-colors">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div id="confirmModal" class="modal-overlay hidden fixed inset-0 bg-black/40 z-[60] flex items-center justify-center">
+  <div class="modal-box bg-white rounded-lg shadow-xl w-full max-w-sm mx-4">
+    <div class="px-6 py-5">
+      <p id="confirmMsg" class="text-sm text-textPrimary"></p>
+    </div>
+    <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
+      <button onclick="cancelConfirm()" class="border border-gray-300 text-textSecondary px-4 py-1.5 rounded text-sm hover:border-primary hover:text-primary transition-colors">取消</button>
+      <button onclick="doConfirm()" class="bg-danger text-white px-4 py-1.5 rounded text-sm hover:bg-dangerHover transition-colors">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// --- Tag Data Store ---
+const tagData = {
+  applyChannel: [],
+  applyMerchant: [],
+  excludeChannel: [],
+  excludeMerchant: [],
+};
+
+function focusTagInput(key) {
+  document.getElementById('tagInput-' + key).focus();
+}
+
+function handleTagKey(e, key) {
+  const val = e.target.value.trim();
+  if ((e.key === 'Enter' || e.key === ',' || e.key === '，') && val) {
+    e.preventDefault();
+    addTag(key, val.replace(/[,，]/g, ''));
+    e.target.value = '';
+  }
+}
+
+function addTag(key, value) {
+  if (!value || tagData[key].includes(value)) return;
+  tagData[key].push(value);
+  renderTags(key);
+}
+
+function removeTag(key, value) {
+  tagData[key] = tagData[key].filter(v => v !== value);
+  renderTags(key);
+}
+
+function renderTags(key) {
+  const wrap = document.getElementById('tagWrap-' + key);
+  const input = document.getElementById('tagInput-' + key);
+  wrap.querySelectorAll('.tag-item').forEach(t => t.remove());
+  tagData[key].forEach(v => {
+    const span = document.createElement('span');
+    span.className = 'tag-item';
+    span.innerHTML = v + ' <span class="tag-close" onclick="removeTag(\'' + key + '\',\'' + v + '\')">&times;</span>';
+    wrap.insertBefore(span, input);
+  });
+}
+
+// --- Data ---
+const now = () => new Date().toLocaleString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' }).replace(/\//g, '-');
+
+let strategyList = [
+  {
+    id: 1, no: 'STR-20250101', name: '高风险省份拦截策略', areaDimension: '省', distance: null, locationMethod: '经纬度', merchantType: '小微',
+    status: '启用', operator: '张三', updateTime: '2025-12-10 09:30:00',
+    applyChannel: ['CH001', 'CH002'], applyMerchant: ['M001'],
+    excludeChannel: [], excludeMerchant: ['M888'], remark: '针对高风险省份的拦截'
+  },
+  {
+    id: 2, no: 'STR-20250102', name: '重点城市风控策略', areaDimension: '市', distance: null, locationMethod: 'IP', merchantType: '非小微',
+    status: '启用', operator: '李四', updateTime: '2025-12-11 14:20:00',
+    applyChannel: ['CH003'], applyMerchant: [],
+    excludeChannel: [], excludeMerchant: ['M666'], remark: ''
+  },
+  {
+    id: 3, no: 'STR-20250103', name: '距离精细化拦截', areaDimension: '距离', distance: 5000, locationMethod: '经纬度', merchantType: '全部',
+    status: '停用', operator: '王五', updateTime: '2025-12-12 16:45:00',
+    applyChannel: [], applyMerchant: ['M002', 'M003'],
+    excludeChannel: ['CH005'], excludeMerchant: [], remark: '距离级别精细化管控'
+  },
+  {
+    id: 4, no: 'STR-20250104', name: '全省通用拦截规则', areaDimension: '省', distance: null, locationMethod: 'IP', merchantType: '小微',
+    status: '启用', operator: '赵六', updateTime: '2025-12-13 11:00:00',
+    applyChannel: ['CH010', 'CH011', 'CH012'], applyMerchant: ['M004'],
+    excludeChannel: [], excludeMerchant: ['M999'], remark: ''
+  },
+];
+let idSeq = 5;
+let editingId = null;
+let confirmCallback = null;
+
+// --- Toast ---
+function showToast(msg, type = 'success') {
+  const colors = { success: 'bg-green-500', error: 'bg-red-500', info: 'bg-primary' };
+  const el = document.createElement('div');
+  el.className = `toast ${colors[type] || colors.info} text-white px-5 py-2.5 rounded shadow-lg text-sm`;
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 2200);
+}
+
+// --- Location Method Change (linkage with areaDimension) ---
+function onLocationMethodChange() {
+  const locEl = document.querySelector('input[name="locationMethod"]:checked');
+  const distanceLabel = document.getElementById('dimensionDistanceLabel');
+  const distanceInputWrap = document.getElementById('distanceInputWrap');
+  if (!locEl) return;
+  if (locEl.value === '经纬度') {
+    distanceLabel.classList.remove('hidden');
+  } else {
+    distanceLabel.classList.add('hidden');
+    const dimEl = document.querySelector('input[name="areaDimension"]:checked');
+    if (dimEl && dimEl.value === '距离') {
+      document.querySelector('input[name="areaDimension"][value="省"]').checked = true;
+      distanceInputWrap.classList.add('hidden');
+      document.getElementById('formDistance').value = '';
+    }
+  }
+}
+
+// --- Dimension change ---
+function onDimensionChange() {
+  const dimEl = document.querySelector('input[name="areaDimension"]:checked');
+  const distanceInputWrap = document.getElementById('distanceInputWrap');
+  if (dimEl && dimEl.value === '距离') {
+    distanceInputWrap.classList.remove('hidden');
+  } else {
+    distanceInputWrap.classList.add('hidden');
+    document.getElementById('formDistance').value = '';
+  }
+}
+
+// --- Render Table ---
+function renderTable(data) {
+  const tbody = document.getElementById('strategyTableBody');
+  const empty = document.getElementById('emptyTip');
+  if (!data.length) { tbody.innerHTML = ''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  tbody.innerHTML = data.map(d => {
+    const dimDisplay = d.areaDimension === '距离' ? `距离(${d.distance}米)` : d.areaDimension;
+    return `
+    <tr class="hover:bg-gray-50 transition-colors">
+      <td class="px-3 py-3 text-textPrimary font-mono text-xs">${d.no}</td>
+      <td class="px-3 py-3 text-textPrimary font-medium">${d.name}</td>
+      <td class="px-3 py-3 text-textSecondary">${dimDisplay}</td>
+      <td class="px-3 py-3"><span class="inline-block px-2 py-0.5 rounded text-xs font-medium ${d.locationMethod === '经纬度' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}">${d.locationMethod}</span></td>
+      <td class="px-3 py-3 text-textSecondary">${d.merchantType}</td>
+      <td class="px-3 py-3"><span class="inline-block px-2 py-0.5 rounded text-xs font-medium ${d.status === '启用' ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'}">${d.status}</span></td>
+      <td class="px-3 py-3 text-textSecondary">${d.operator}</td>
+      <td class="px-3 py-3 text-textSecondary text-xs">${d.updateTime}</td>
+      <td class="px-3 py-3">
+        <div class="flex items-center gap-2 flex-nowrap">
+          <button onclick="openEditModal(${d.id})" class="text-primary hover:text-primaryHover text-xs transition-colors whitespace-nowrap">编辑</button>
+          <button onclick="toggleStatus(${d.id})" class="text-primary hover:text-primaryHover text-xs transition-colors whitespace-nowrap">${d.status === '启用' ? '停用' : '启用'}</button>
+          <button onclick="viewDetail(${d.id})" class="text-primary hover:text-primaryHover text-xs transition-colors whitespace-nowrap">查看详情</button>
+          <button onclick="confirmDelete(${d.id})" class="text-danger hover:text-dangerHover text-xs transition-colors whitespace-nowrap">删除</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// --- Filter ---
+function filterList() {
+  const no = document.getElementById('filterStrategyNo').value.trim().toLowerCase();
+  const name = document.getElementById('filterStrategyName').value.trim().toLowerCase();
+  const channel = document.getElementById('filterChannelNo').value.trim();
+  const merchant = document.getElementById('filterMerchantNo').value.trim();
+  const status = document.getElementById('filterStatus').value;
+  renderTable(strategyList.filter(d => {
+    if (no && !d.no.toLowerCase().includes(no)) return false;
+    if (name && !d.name.toLowerCase().includes(name)) return false;
+    if (channel && !d.applyChannel.includes(channel)) return false;
+    if (merchant && !d.applyMerchant.includes(merchant)) return false;
+    if (status && d.status !== status) return false;
+    return true;
+  }));
+}
+
+function resetFilter() {
+  document.getElementById('filterStrategyNo').value = '';
+  document.getElementById('filterStrategyName').value = '';
+  document.getElementById('filterChannelNo').value = '';
+  document.getElementById('filterMerchantNo').value = '';
+  document.getElementById('filterStatus').value = '';
+  renderTable(strategyList);
+}
+
+// --- Modal: Add ---
+function openAddModal() {
+  editingId = null;
+  document.getElementById('formModalTitle').textContent = '新增策略';
+  clearForm();
+  document.getElementById('formModal').classList.remove('hidden');
+}
+
+// --- Modal: Edit ---
+function openEditModal(id) {
+  const d = strategyList.find(x => x.id === id);
+  if (!d) return;
+  editingId = id;
+  document.getElementById('formModalTitle').textContent = '编辑策略';
+  clearForm();
+  document.getElementById('formName').value = d.name;
+  document.getElementById('formRemark').value = d.remark || '';
+  document.querySelector(`input[name="locationMethod"][value="${d.locationMethod}"]`).checked = true;
+  onLocationMethodChange();
+  document.querySelector(`input[name="areaDimension"][value="${d.areaDimension}"]`).checked = true;
+  onDimensionChange();
+  if (d.areaDimension === '距离' && d.distance) {
+    document.getElementById('formDistance').value = d.distance;
+  }
+  document.querySelector(`input[name="merchantType"][value="${d.merchantType}"]`).checked = true;
+  document.querySelector(`input[name="formStatus"][value="${d.status}"]`).checked = true;
+  Object.keys(tagData).forEach(key => { tagData[key] = [...(d[key] || [])]; renderTags(key); });
+  document.getElementById('formModal').classList.remove('hidden');
+}
+
+function clearForm() {
+  document.getElementById('formName').value = '';
+  document.getElementById('formRemark').value = '';
+  document.getElementById('formDistance').value = '';
+  document.querySelectorAll('input[name="areaDimension"]').forEach(r => r.checked = false);
+  document.querySelectorAll('input[name="locationMethod"]').forEach(r => r.checked = false);
+  document.querySelectorAll('input[name="merchantType"]').forEach(r => r.checked = false);
+  document.querySelector('input[name="formStatus"][value="启用"]').checked = true;
+  document.getElementById('dimensionDistanceLabel').classList.remove('hidden');
+  document.getElementById('distanceInputWrap').classList.add('hidden');
+  Object.keys(tagData).forEach(key => { tagData[key] = []; renderTags(key); });
+  document.querySelectorAll('.tag-input-wrap input').forEach(i => i.value = '');
+}
+
+function closeFormModal() {
+  document.getElementById('formModal').classList.add('hidden');
+}
+
+// --- Cross-strategy validation for applyChannel and applyMerchant ---
+function checkDuplicateInApply(list, field, label, excludeId) {
+  const conflicts = [];
+  list.forEach(val => {
+    for (const s of strategyList) {
+      if (s.id === excludeId) continue;
+      if ((s[field] || []).includes(val)) {
+        conflicts.push({ value: val, strategy: s.name });
+        break;
+      }
+    }
+  });
+  return conflicts;
+}
+
+function submitForm() {
+  const name = document.getElementById('formName').value.trim();
+  const remark = document.getElementById('formRemark').value.trim();
+  const dimEl = document.querySelector('input[name="areaDimension"]:checked');
+  const locEl = document.querySelector('input[name="locationMethod"]:checked');
+  const mtypeEl = document.querySelector('input[name="merchantType"]:checked');
+  const statusEl = document.querySelector('input[name="formStatus"]:checked');
+  const distance = parseInt(document.getElementById('formDistance').value);
+
+  if (!name) { showToast('请输入策略名称', 'error'); return; }
+  if (!locEl) { showToast('请选择地理位置转换方式', 'error'); return; }
+  if (!dimEl) { showToast('请选择区域维度', 'error'); return; }
+  if (dimEl.value === '距离' && (isNaN(distance) || distance < 1)) { showToast('请输入有效距离（米）', 'error'); return; }
+  if (!mtypeEl) { showToast('请选择商户类型', 'error'); return; }
+  if (!statusEl) { showToast('请选择策略状态', 'error'); return; }
+
+  // Cross-strategy validation: applyChannel and applyMerchant must be unique across strategies
+  const channelConflicts = checkDuplicateInApply(tagData.applyChannel, 'applyChannel', '渠道号', editingId);
+  const merchantConflicts = checkDuplicateInApply(tagData.applyMerchant, 'applyMerchant', '商户号', editingId);
+  if (channelConflicts.length) {
+    const msg = channelConflicts.map(c => `渠道号 ${c.value} 已在策略【${c.strategy}】的适用范围中`).join('；');
+    showToast(msg, 'error'); return;
+  }
+  if (merchantConflicts.length) {
+    const msg = merchantConflicts.map(c => `商户号 ${c.value} 已在策略【${c.strategy}】的适用范围中`).join('；');
+    showToast(msg, 'error'); return;
+  }
+
+  const obj = {
+    name, remark,
+    areaDimension: dimEl.value,
+    distance: dimEl.value === '距离' ? distance : null,
+    locationMethod: locEl.value,
+    merchantType: mtypeEl.value,
+    status: statusEl.value,
+    applyChannel: [...tagData.applyChannel],
+    applyMerchant: [...tagData.applyMerchant],
+    excludeChannel: [...tagData.excludeChannel],
+    excludeMerchant: [...tagData.excludeMerchant],
+  };
+
+  if (editingId !== null) {
+    const idx = strategyList.findIndex(x => x.id === editingId);
+    if (idx > -1) {
+      Object.assign(strategyList[idx], obj, { operator: '当前用户', updateTime: now() });
+    }
+    showToast('策略编辑成功');
+  } else {
+    const no = 'STR-' + (20250100 + idSeq);
+    strategyList.push({ id: idSeq++, no, ...obj, operator: '当前用户', updateTime: now() });
+    showToast('策略新增成功');
+  }
+  closeFormModal();
+  filterList();
+}
+
+// --- Toggle Status ---
+function toggleStatus(id) {
+  const d = strategyList.find(x => x.id === id);
+  if (!d) return;
+  d.status = d.status === '启用' ? '停用' : '启用';
+  d.operator = '当前用户';
+  d.updateTime = now();
+  renderTable(strategyList);
+  showToast('策略已' + d.status);
+}
+
+// --- View Detail ---
+function viewDetail(id) {
+  const d = strategyList.find(x => x.id === id);
+  if (!d) return;
+  const tagHtml = (arr) => arr.length ? arr.map(v => `<span class="tag-item">${v}</span>`).join(' ') : '<span class="text-xs text-textSecondary">未配置</span>';
+  const dimDisplay = d.areaDimension === '距离' ? `距离(${d.distance}米)` : d.areaDimension;
+  document.getElementById('detailContent').innerHTML = `
+    <div class="detail-section">
+      <div class="detail-section-title">① 基本信息</div>
+      <div class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
+        <div><span class="text-textSecondary">策略号：</span><span class="text-textPrimary font-mono">${d.no}</span></div>
+        <div><span class="text-textSecondary">策略名称：</span><span class="text-textPrimary font-medium">${d.name}</span></div>
+        <div><span class="text-textSecondary">备注：</span><span class="text-textPrimary">${d.remark || '--'}</span></div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">② 区域配置</div>
+      <div class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
+        <div><span class="text-textSecondary">地理位置转换方式：</span><span class="text-textPrimary">${d.locationMethod}</span></div>
+        <div><span class="text-textSecondary">区域维度：</span><span class="text-textPrimary">${dimDisplay}</span></div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">③ 商户类型</div>
+      <div class="text-sm"><span class="text-textPrimary">${d.merchantType}</span></div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">④ 适用范围</div>
+      <div class="space-y-2 text-sm">
+        <div><span class="text-textSecondary">适用渠道号：</span>${tagHtml(d.applyChannel)}</div>
+        <div><span class="text-textSecondary">适用商户号：</span>${tagHtml(d.applyMerchant)}</div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">⑤ 不适用范围</div>
+      <div class="space-y-2 text-sm">
+        <div><span class="text-textSecondary">不适用渠道号：</span>${tagHtml(d.excludeChannel)}</div>
+        <div><span class="text-textSecondary">不适用商户号：</span>${tagHtml(d.excludeMerchant)}</div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">⑥ 策略状态</div>
+      <div class="text-sm"><span class="inline-block px-2 py-0.5 rounded text-xs font-medium ${d.status === '启用' ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'}">${d.status}</span></div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">其他信息</div>
+      <div class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
+        <div><span class="text-textSecondary">操作人：</span><span class="text-textPrimary">${d.operator}</span></div>
+        <div><span class="text-textSecondary">更新时间：</span><span class="text-textPrimary">${d.updateTime}</span></div>
+      </div>
+    </div>`;
+  document.getElementById('detailModal').classList.remove('hidden');
+}
+
+function closeDetailModal() {
+  document.getElementById('detailModal').classList.add('hidden');
+}
+
+// --- Delete ---
+function confirmDelete(id) {
+  const d = strategyList.find(x => x.id === id);
+  showConfirm(`确认要删除策略【${d.name}】吗？删除后不可恢复。`, () => {
+    strategyList = strategyList.filter(x => x.id !== id);
+    renderTable(strategyList);
+    showToast('删除成功');
+  });
+}
+
+// --- Confirm Modal ---
+function showConfirm(msg, cb) {
+  document.getElementById('confirmMsg').textContent = msg;
+  confirmCallback = cb;
+  document.getElementById('confirmModal').classList.remove('hidden');
+}
+
+function cancelConfirm() {
+  confirmCallback = null;
+  document.getElementById('confirmModal').classList.add('hidden');
+}
+
+function doConfirm() {
+  if (confirmCallback) confirmCallback();
+  confirmCallback = null;
+  document.getElementById('confirmModal').classList.add('hidden');
+}
+
+// --- Close modals on overlay click ---
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.add('hidden');
+  });
+});
+
+// --- Init ---
+renderTable(strategyList);
+</script>
+</body>
+</html>
