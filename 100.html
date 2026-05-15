@@ -215,15 +215,21 @@ th, td { border: 1px solid #f0f0f0; }
       <!-- ③ 商户类型 -->
       <div class="mb-6">
         <div class="section-title">③ 商户类型</div>
-        <div class="flex gap-4">
+        <div class="flex flex-wrap gap-x-6 gap-y-2">
           <label class="flex items-center gap-1.5 text-sm cursor-pointer">
-            <input type="radio" name="merchantType" value="小微" class="accent-primary"> 小微
+            <input type="checkbox" name="merchantType" value="企业" class="accent-primary"> 企业
           </label>
           <label class="flex items-center gap-1.5 text-sm cursor-pointer">
-            <input type="radio" name="merchantType" value="非小微" class="accent-primary"> 非小微
+            <input type="checkbox" name="merchantType" value="个体" class="accent-primary"> 个体
           </label>
           <label class="flex items-center gap-1.5 text-sm cursor-pointer">
-            <input type="radio" name="merchantType" value="全部" class="accent-primary"> 全部
+            <input type="checkbox" name="merchantType" value="小微" class="accent-primary"> 小微
+          </label>
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+            <input type="checkbox" name="merchantType" value="事业单位" class="accent-primary"> 事业单位
+          </label>
+          <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+            <input type="checkbox" name="merchantType" value="其他组织" class="accent-primary"> 其他组织
           </label>
         </div>
       </div>
@@ -366,25 +372,25 @@ const now = () => new Date().toLocaleString('zh-CN', { year:'numeric', month:'2-
 
 let strategyList = [
   {
-    id: 1, no: 'STR-20250101', name: '高风险省份拦截策略', areaDimension: '省', distance: null, locationMethod: '经纬度', merchantType: '小微',
+    id: 1, no: 'STR-20250101', name: '高风险省份拦截策略', areaDimension: '省', distance: null, locationMethod: '经纬度', merchantType: ['企业', '小微'],
     status: '启用', operator: '张三', updateTime: '2025-12-10 09:30:00',
     applyChannel: ['CH001', 'CH002'], applyMerchant: ['M001'],
     excludeChannel: [], excludeMerchant: ['M888'], remark: '针对高风险省份的拦截'
   },
   {
-    id: 2, no: 'STR-20250102', name: '重点城市风控策略', areaDimension: '市', distance: null, locationMethod: 'IP', merchantType: '非小微',
+    id: 2, no: 'STR-20250102', name: '重点城市风控策略', areaDimension: '市', distance: null, locationMethod: 'IP', merchantType: ['个体'],
     status: '启用', operator: '李四', updateTime: '2025-12-11 14:20:00',
     applyChannel: ['CH003'], applyMerchant: [],
     excludeChannel: [], excludeMerchant: ['M666'], remark: ''
   },
   {
-    id: 3, no: 'STR-20250103', name: '距离精细化拦截', areaDimension: '距离', distance: 5000, locationMethod: '经纬度', merchantType: '全部',
+    id: 3, no: 'STR-20250103', name: '距离精细化拦截', areaDimension: '距离', distance: 5000, locationMethod: '经纬度', merchantType: ['企业', '个体', '小微', '事业单位', '其他组织'],
     status: '停用', operator: '王五', updateTime: '2025-12-12 16:45:00',
     applyChannel: [], applyMerchant: ['M002', 'M003'],
     excludeChannel: ['CH005'], excludeMerchant: [], remark: '距离级别精细化管控'
   },
   {
-    id: 4, no: 'STR-20250104', name: '全省通用拦截规则', areaDimension: '省', distance: null, locationMethod: 'IP', merchantType: '小微',
+    id: 4, no: 'STR-20250104', name: '全省通用拦截规则', areaDimension: '省', distance: null, locationMethod: 'IP', merchantType: ['小微', '事业单位'],
     status: '启用', operator: '赵六', updateTime: '2025-12-13 11:00:00',
     applyChannel: ['CH010', 'CH011', 'CH012'], applyMerchant: ['M004'],
     excludeChannel: [], excludeMerchant: ['M999'], remark: ''
@@ -449,7 +455,7 @@ function renderTable(data) {
       <td class="px-3 py-3 text-textPrimary font-medium">${d.name}</td>
       <td class="px-3 py-3 text-textSecondary">${dimDisplay}</td>
       <td class="px-3 py-3"><span class="inline-block px-2 py-0.5 rounded text-xs font-medium ${d.locationMethod === '经纬度' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}">${d.locationMethod}</span></td>
-      <td class="px-3 py-3 text-textSecondary">${d.merchantType}</td>
+      <td class="px-3 py-3 text-textSecondary">${Array.isArray(d.merchantType) ? d.merchantType.join("、") : d.merchantType}</td>
       <td class="px-3 py-3"><span class="inline-block px-2 py-0.5 rounded text-xs font-medium ${d.status === '启用' ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'}">${d.status}</span></td>
       <td class="px-3 py-3 text-textSecondary">${d.operator}</td>
       <td class="px-3 py-3 text-textSecondary text-xs">${d.updateTime}</td>
@@ -515,7 +521,7 @@ function openEditModal(id) {
   if (d.areaDimension === '距离' && d.distance) {
     document.getElementById('formDistance').value = d.distance;
   }
-  document.querySelector(`input[name="merchantType"][value="${d.merchantType}"]`).checked = true;
+  (d.merchantType || []).forEach(v => { const cb = document.querySelector(`input[name="merchantType"][value="${v}"]`); if (cb) cb.checked = true; });
   document.querySelector(`input[name="formStatus"][value="${d.status}"]`).checked = true;
   Object.keys(tagData).forEach(key => { tagData[key] = [...(d[key] || [])]; renderTags(key); });
   document.getElementById('formModal').classList.remove('hidden');
@@ -559,7 +565,7 @@ function submitForm() {
   const remark = document.getElementById('formRemark').value.trim();
   const dimEl = document.querySelector('input[name="areaDimension"]:checked');
   const locEl = document.querySelector('input[name="locationMethod"]:checked');
-  const mtypeEl = document.querySelector('input[name="merchantType"]:checked');
+  const mtypeChecked = document.querySelectorAll('input[name="merchantType"]:checked');
   const statusEl = document.querySelector('input[name="formStatus"]:checked');
   const distance = parseInt(document.getElementById('formDistance').value);
 
@@ -567,7 +573,7 @@ function submitForm() {
   if (!locEl) { showToast('请选择地理位置转换方式', 'error'); return; }
   if (!dimEl) { showToast('请选择区域维度', 'error'); return; }
   if (dimEl.value === '距离' && (isNaN(distance) || distance < 1)) { showToast('请输入有效距离（米）', 'error'); return; }
-  if (!mtypeEl) { showToast('请选择商户类型', 'error'); return; }
+  if (!mtypeChecked.length) { showToast('请选择至少一种商户类型', 'error'); return; }
   if (!statusEl) { showToast('请选择策略状态', 'error'); return; }
 
   // Cross-strategy validation: applyChannel and applyMerchant must be unique across strategies
@@ -587,7 +593,7 @@ function submitForm() {
     areaDimension: dimEl.value,
     distance: dimEl.value === '距离' ? distance : null,
     locationMethod: locEl.value,
-    merchantType: mtypeEl.value,
+    merchantType: Array.from(mtypeChecked).map(el => el.value),
     status: statusEl.value,
     applyChannel: [...tagData.applyChannel],
     applyMerchant: [...tagData.applyMerchant],
@@ -645,7 +651,7 @@ function viewDetail(id) {
     </div>
     <div class="detail-section">
       <div class="detail-section-title">③ 商户类型</div>
-      <div class="text-sm"><span class="text-textPrimary">${d.merchantType}</span></div>
+      <div class="text-sm"><span class="text-textPrimary">${Array.isArray(d.merchantType) ? d.merchantType.join("、") : d.merchantType}</span></div>
     </div>
     <div class="detail-section">
       <div class="detail-section-title">④ 适用范围</div>
