@@ -1,651 +1,684 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>跳转小程序白名单配置</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#165DFF',
-                        success: '#00B42A',
-                        warning: '#FF7D00',
-                        danger: '#F53F3F',
-                        gray: {
-                            100: '#F2F3F5',
-                            200: '#E5E6EB',
-                            300: '#C9CDD4',
-                            400: '#86909C',
-                            500: '#4E5969',
-                            600: '#272E3B',
-                            700: '#1D2129',
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'system-ui', 'sans-serif'],
-                    },
-                }
-            }
-        }
-    </script>
-    <style type="text/tailwindcss">
-        @layer utilities {
-            .content-auto {
-                content-visibility: auto;
-            }
-            .table-hover-row:hover {
-                background-color: #F7F8FA;
-            }
-            .btn {
-                @apply px-3 py-1.5 rounded text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
-            }
-            .btn-primary {
-                @apply bg-primary text-white hover:bg-primary/90 focus:ring-primary/50;
-            }
-            .btn-default {
-                @apply bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 focus:ring-gray-200;
-            }
-            .btn-danger {
-                @apply bg-danger text-white hover:bg-danger/90 focus:ring-danger/50;
-            }
-            .input {
-                @apply w-full px-3 py-2 border border-gray-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary;
-            }
-            .select {
-                @apply w-full px-3 py-2 border border-gray-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>汇来米内控运营控台</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        primary: '#1677ff',
+        primaryHover: '#4096ff',
+        danger: '#ff4d4f',
+        dangerHover: '#ff7875',
+        success: '#52c41a',
+        successHover: '#73d13d',
+        warning: '#faad14',
+        bg: '#f5f5f5',
+        card: '#ffffff',
+        border: '#e8e8e8',
+        textPrimary: '#262626',
+        textSecondary: '#8c8c8c',
+        sidebarBg: '#001529',
+        sidebarHover: '#000c17',
+        sidebarActive: '#1677ff',
+      }
+    }
+  }
+}
+</script>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; }
+.modal-overlay { transition: opacity .2s; }
+.modal-overlay.hidden { opacity: 0; pointer-events: none; }
+.modal-box { transition: transform .2s, opacity .2s; }
+.modal-overlay.hidden .modal-box { transform: translateY(20px); opacity: 0; }
+.toast { animation: toastIn .3s ease, toastOut .3s ease 1.7s forwards; }
+@keyframes toastIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes toastOut { from { opacity: 1; } to { opacity: 0; } }
+table { border-collapse: collapse; }
+th, td { border: 1px solid #f0f0f0; }
+.section-title { font-size: 14px; font-weight: 600; color: #262626; padding-bottom: 8px; margin-bottom: 16px; border-bottom: 1px solid #f0f0f0; }
+.form-scroll { max-height: 65vh; overflow-y: auto; }
+.batch-textarea { font-family: 'SF Mono', 'Menlo', 'Consolas', monospace; font-size: 13px; line-height: 1.6; }
+.checkbox-wrap { display: flex; align-items: center; justify-content: center; }
+.checkbox-wrap input[type="checkbox"] { width: 16px; height: 16px; accent-color: #1677ff; cursor: pointer; }
+</style>
 </head>
-<body class="bg-gray-100 font-sans text-gray-700">
-    <div class="min-h-screen flex flex-col">
-        <!-- 顶部导航 -->
-        <header class="bg-white shadow-sm border-b border-gray-200">
-            <div class="container mx-auto px-4 py-3 flex items-center justify-between">
-                <h1 class="text-xl font-semibold text-gray-700">跳转小程序不验签白名单配置</h1>
-                <div class="flex items-center space-x-2">
-                    <button id="batchAddBtn" class="btn btn-primary">
-                        <i class="fa fa-plus mr-1"></i> 批量新增
-                    </button>
-                    <button id="addBtn" class="btn btn-primary">
-                        <i class="fa fa-plus mr-1"></i> 单个新增
-                    </button>
-                    <button id="exportBtn" class="btn btn-default">
-                        <i class="fa fa-download mr-1"></i> 批量导出
-                    </button>
-                    <button id="batchDeleteBtn" class="btn btn-danger" disabled>
-                        <i class="fa fa-trash mr-1"></i> 批量删除
-                    </button>
-                </div>
-            </div>
-        </header>
+<body class="bg-bg min-h-screen">
 
-        <!-- 主内容区 -->
-        <main class="flex-1 container mx-auto px-4 py-6">
-            <!-- 搜索区域 -->
-            <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
-                <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-500 mb-1">商户号</label>
-                        <input type="text" id="searchMerchantNo" class="input" placeholder="请输入商户号">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-500 mb-1">机构商号</label>
-                        <input type="text" id="searchOrgNo" class="input" placeholder="请输入机构商号">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-500 mb-1">渠道商号</label>
-                        <input type="text" id="searchChannelNo" class="input" placeholder="请输入渠道商号">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-500 mb-1">商户名称</label>
-                        <input type="text" id="searchMerchantName" class="input" placeholder="请输入商户名称">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-500 mb-1">机构名称</label>
-                        <input type="text" id="searchOrgName" class="input" placeholder="请输入机构名称">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-500 mb-1">渠道名称</label>
-                        <input type="text" id="searchChannelName" class="input" placeholder="请输入渠道名称">
-                    </div>
-                </div>
-                <div class="flex justify-end mt-4 space-x-2">
-                    <button id="resetBtn" class="btn btn-default">重置</button>
-                    <button id="searchBtn" class="btn btn-primary">查询</button>
-                </div>
-            </div>
+<!-- Toast Container -->
+<div id="toastContainer" class="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-2"></div>
 
-            <!-- 表格区域 -->
-            <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full">
-                        <thead>
-                            <tr class="bg-gray-50 border-b border-gray-200">
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
-                                    <input type="checkbox" id="selectAll" class="rounded">
-                                </th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">类型</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">商号</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">名称</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">创建时间</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tableBody">
-                            <!-- 数据行将通过JS动态生成 -->
-                        </tbody>
-                    </table>
-                </div>
+<!-- Layout: Sidebar + Main -->
+<div class="flex min-h-screen">
 
-                <!-- 空状态 -->
-                <div id="emptyState" class="py-16 text-center text-gray-400 hidden">
-                    <i class="fa fa-inbox text-4xl mb-4"></i>
-                    <p>暂无数据</p>
-                </div>
+  <!-- Sidebar -->
+  <div class="w-52 bg-sidebarBg flex flex-col flex-shrink-0">
+    <div class="h-14 flex items-center px-5 border-b border-white/10">
+      <span class="text-white text-base font-semibold tracking-wide">汇来米内控运营控台</span>
+    </div>
+    <nav class="flex-1 py-2 overflow-y-auto">
+      <a class="flex items-center gap-3 px-5 py-3 text-sm text-white bg-sidebarActive/20 cursor-pointer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        <span>跳转小程序不验签白名单</span>
+      </a>
+    </nav>
+  </div>
 
-                <!-- 分页 -->
-                <div class="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
-                    <div class="text-sm text-gray-500">
-                        共 <span id="totalCount">0</span> 条数据
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <button id="prevPage" class="btn btn-default" disabled>上一页</button>
-                        <span class="text-sm text-gray-500">
-                            第 <span id="currentPage">1</span> / <span id="totalPages">1</span> 页
-                        </span>
-                        <button id="nextPage" class="btn btn-default" disabled>下一页</button>
-                    </div>
-                </div>
-            </div>
-        </main>
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col min-w-0">
+
+    <!-- Top Header -->
+    <div class="bg-card border-b border-border h-14 flex items-center px-6 flex-shrink-0">
+      <span class="text-sm text-textSecondary">跳转小程序不验签白名单配置</span>
     </div>
 
-    <!-- 新增/编辑弹窗 -->
-    <div id="modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                <h3 id="modalTitle" class="text-lg font-semibold text-gray-700">新增白名单</h3>
-                <button id="closeModal" class="text-gray-400 hover:text-gray-600">
-                    <i class="fa fa-times"></i>
-                </button>
-            </div>
-            <div class="px-6 py-4 space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-500 mb-1">类型 <span class="text-danger">*</span></label>
-                    <select id="type" class="select">
-                        <option value="merchant">商户号</option>
-                        <option value="org">机构商号</option>
-                        <option value="channel">渠道商号</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-500 mb-1">商号 <span class="text-danger">*</span></label>
-                    <input type="text" id="no" class="input" placeholder="请输入商号">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-500 mb-1">名称</label>
-                    <input type="text" id="name" class="input" placeholder="请输入名称（非必填）">
-                </div>
-            </div>
-            <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-2">
-                <button id="cancelBtn" class="btn btn-default">取消</button>
-                <button id="saveBtn" class="btn btn-primary">保存</button>
-            </div>
+    <!-- Content Area -->
+    <div class="flex-1 overflow-y-auto">
+      <div class="px-6 py-5">
+
+        <!-- Page Title -->
+        <div class="mb-4">
+          <h2 class="text-lg font-semibold text-textPrimary">跳转小程序 - 不验签白名单配置</h2>
+          <p class="text-sm text-textSecondary mt-1">管理跳转小程序不验签白名单，配置商户号、代理商号、渠道商号及其对应名称，控制免验签范围。</p>
         </div>
-    </div>
 
-    <!-- 批量新增弹窗 -->
-    <div id="batchAddModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4">
-            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                <h3 class="text-lg font-semibold text-gray-700">批量新增白名单</h3>
-                <button id="closeBatchAddModal" class="text-gray-400 hover:text-gray-600">
-                    <i class="fa fa-times"></i>
-                </button>
+        <!-- Query Filter Bar -->
+        <div class="bg-card border border-border rounded-lg p-4 mb-4">
+          <div class="flex flex-wrap items-end gap-4">
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-textSecondary">商户号</label>
+              <input id="filterMerchantNo" type="text" placeholder="请输入商户号" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[140px]">
             </div>
-            <div class="px-6 py-4 space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-500 mb-1">批量输入</label>
-                    <textarea id="batchInput" class="input h-40" placeholder="每行一条，格式：类型,商号,名称&#10;类型可选：merchant(商户号)、org(机构商号)、channel(渠道商号)&#10;名称非必填&#10;示例：&#10;merchant,123456789,测试商户&#10;org,987654321,测试机构"></textarea>
-                </div>
-                <div class="text-sm text-gray-500">
-                    <p>提示：每行一条数据，逗号分隔，最多支持100条</p>
-                </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-textSecondary">商户名称</label>
+              <input id="filterMerchantName" type="text" placeholder="请输入商户名称" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[140px]">
             </div>
-            <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-2">
-                <button id="cancelBatchAddBtn" class="btn btn-default">取消</button>
-                <button id="saveBatchAddBtn" class="btn btn-primary">导入</button>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-textSecondary">代理商号</label>
+              <input id="filterInstNo" type="text" placeholder="请输入代理商号" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[140px]">
             </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-textSecondary">代理商名称</label>
+              <input id="filterInstName" type="text" placeholder="请输入代理商名称" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[140px]">
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-textSecondary">渠道商号</label>
+              <input id="filterChannelNo" type="text" placeholder="请输入渠道商号" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[140px]">
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-textSecondary">渠道商名称</label>
+              <input id="filterChannelName" type="text" placeholder="请输入渠道商名称" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[140px]">
+            </div>
+          </div>
+          <div class="flex items-center gap-3 mt-4">
+            <button onclick="filterList()" class="bg-primary text-white px-4 py-1.5 rounded text-sm hover:bg-primaryHover transition-colors">查询</button>
+            <button onclick="resetFilter()" class="border border-gray-300 text-textSecondary px-4 py-1.5 rounded text-sm hover:border-primary hover:text-primary transition-colors">重置</button>
+          </div>
         </div>
-    </div>
 
-    <!-- 确认删除弹窗 -->
-    <div id="confirmModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-700">确认删除</h3>
-            </div>
-            <div class="px-6 py-4">
-                <p id="confirmMessage" class="text-gray-600">确定要删除这条记录吗？此操作不可恢复。</p>
-            </div>
-            <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-2">
-                <button id="cancelConfirmBtn" class="btn btn-default">取消</button>
-                <button id="confirmDeleteBtn" class="btn btn-danger">删除</button>
-            </div>
+        <!-- Action Bar -->
+        <div class="bg-card border border-border rounded-lg p-4 mb-4 flex flex-wrap items-center gap-3">
+          <button onclick="openAddModal()" class="bg-primary text-white px-4 py-1.5 rounded text-sm hover:bg-primaryHover transition-colors flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            新增白名单
+          </button>
+          <button onclick="openBatchAddModal()" class="bg-primary text-white px-4 py-1.5 rounded text-sm hover:bg-primaryHover transition-colors flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            批量新增
+          </button>
+          <button onclick="batchDelete()" class="border border-danger text-danger px-4 py-1.5 rounded text-sm hover:bg-red-50 transition-colors flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            批量删除
+          </button>
+          <div class="flex-1"></div>
+          <button onclick="exportSelected()" class="border border-gray-300 text-textSecondary px-4 py-1.5 rounded text-sm hover:border-primary hover:text-primary transition-colors flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            导出选中
+          </button>
+          <button onclick="exportAll()" class="border border-gray-300 text-textSecondary px-4 py-1.5 rounded text-sm hover:border-primary hover:text-primary transition-colors flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            导出全部
+          </button>
         </div>
+
+        <!-- Whitelist Table -->
+        <div class="bg-card border border-border rounded-lg overflow-hidden">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-gray-50 text-textSecondary">
+                <th class="px-3 py-3 text-center font-medium w-10">
+                  <div class="checkbox-wrap"><input type="checkbox" id="checkAll" onchange="toggleCheckAll()"></div>
+                </th>
+                <th class="px-3 py-3 text-left font-medium">编号</th>
+                <th class="px-3 py-3 text-left font-medium">类型</th>
+                <th class="px-3 py-3 text-left font-medium">号码</th>
+                <th class="px-3 py-3 text-left font-medium">名称</th>
+                <th class="px-3 py-3 text-left font-medium">操作人</th>
+                <th class="px-3 py-3 text-left font-medium">更新时间</th>
+                <th class="px-3 py-3 text-left font-medium w-28">操作</th>
+              </tr>
+            </thead>
+            <tbody id="whitelistTableBody"></tbody>
+          </table>
+          <div id="emptyTip" class="hidden py-12 text-center text-textSecondary text-sm">暂无数据</div>
+          <!-- Pagination -->
+          <div id="paginationBar" class="flex items-center justify-between px-4 py-3 border-t border-gray-100 text-sm text-textSecondary">
+            <div id="selectedCount">已选择 0 项</div>
+            <div class="flex items-center gap-2">
+              <span id="pageInfo">第 1 页 / 共 1 页</span>
+              <button onclick="goPage('prev')" class="border border-gray-300 rounded px-3 py-1 hover:border-primary hover:text-primary transition-colors text-xs">上一页</button>
+              <button onclick="goPage('next')" class="border border-gray-300 rounded px-3 py-1 hover:border-primary hover:text-primary transition-colors text-xs">下一页</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
+  </div>
+</div>
 
-    <script>
-        // 模拟数据
-        let data = [
-            { id: 1, type: 'merchant', no: '1000000001', name: '商户A', createTime: '2026-05-20 10:30:00' },
-            { id: 2, type: 'merchant', no: '1000000002', name: '商户B', createTime: '2026-05-21 14:20:00' },
-            { id: 3, type: 'org', no: '2000000001', name: '机构A', createTime: '2026-05-22 09:15:00' },
-            { id: 4, type: 'channel', no: '3000000001', name: '渠道A', createTime: '2026-05-23 16:45:00' },
-            { id: 5, type: 'merchant', no: '1000000003', name: '', createTime: '2026-05-24 11:00:00' },
-        ];
+<!-- Modal: Single Add / Edit -->
+<div id="formModal" class="modal-overlay hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+  <div class="modal-box bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 flex flex-col max-h-[85vh]">
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+      <h3 id="formModalTitle" class="text-base font-medium text-textPrimary">新增白名单</h3>
+      <button onclick="closeFormModal()" class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+    </div>
+    <div class="form-scroll px-6 py-5 flex-1">
+      <div class="mb-5">
+        <div class="section-title">白名单信息</div>
+        <div class="space-y-4">
+          <div class="flex flex-col gap-1.5">
+            <label class="text-sm text-textPrimary">类型 <span class="text-danger">*</span></label>
+            <select id="formType" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary">
+              <option value="商户">商户</option>
+              <option value="代理商号">代理商号</option>
+              <option value="渠道商号">渠道商号</option>
+            </select>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-sm text-textPrimary" id="formCodeLabel">商户号 <span class="text-danger">*</span></label>
+            <input id="formCode" type="text" placeholder="请输入商户号" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary">
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-sm text-textPrimary" id="formNameLabel">商户名称</label>
+            <input id="formName" type="text" placeholder="选填，请输入商户名称" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2 flex-shrink-0">
+      <button onclick="closeFormModal()" class="border border-gray-300 text-textSecondary px-4 py-1.5 rounded text-sm hover:border-primary hover:text-primary transition-colors">取消</button>
+      <button onclick="submitForm()" class="bg-primary text-white px-4 py-1.5 rounded text-sm hover:bg-primaryHover transition-colors">确认</button>
+    </div>
+  </div>
+</div>
 
-        let currentPage = 1;
-        const pageSize = 10;
-        let filteredData = [...data];
-        let selectedIds = new Set();
-        let editingId = null;
+<!-- Modal: Batch Add -->
+<div id="batchAddModal" class="modal-overlay hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+  <div class="modal-box bg-white rounded-lg shadow-xl w-full max-w-xl mx-4 flex flex-col max-h-[85vh]">
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+      <h3 class="text-base font-medium text-textPrimary">批量新增白名单</h3>
+      <button onclick="closeBatchAddModal()" class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+    </div>
+    <div class="form-scroll px-6 py-5 flex-1">
+      <div class="mb-5">
+        <div class="section-title">批量新增配置</div>
+        <div class="space-y-4">
+          <div class="flex flex-col gap-1.5">
+            <label class="text-sm text-textPrimary">类型 <span class="text-danger">*</span></label>
+            <select id="batchType" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary" onchange="updateBatchPlaceholder()">
+              <option value="商户">商户</option>
+              <option value="代理商号">代理商号</option>
+              <option value="渠道商号">渠道商号</option>
+            </select>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-sm text-textPrimary">批量录入 <span class="text-danger">*</span></label>
+            <p class="text-xs text-textSecondary">每行一条，格式：号码[,名称]。名称为选填项，用英文逗号分隔。</p>
+            <textarea id="batchContent" rows="10" placeholder="M100001,示例商户1&#10;M100002,示例商户2&#10;M100003" class="batch-textarea border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none w-full"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2 flex-shrink-0">
+      <button onclick="closeBatchAddModal()" class="border border-gray-300 text-textSecondary px-4 py-1.5 rounded text-sm hover:border-primary hover:text-primary transition-colors">取消</button>
+      <button onclick="submitBatchAdd()" class="bg-primary text-white px-4 py-1.5 rounded text-sm hover:bg-primaryHover transition-colors">确认新增</button>
+    </div>
+  </div>
+</div>
 
-        // 类型映射
-        const typeMap = {
-            merchant: '商户号',
-            org: '机构商号',
-            channel: '渠道商号'
-        };
+<!-- Confirm Modal -->
+<div id="confirmModal" class="modal-overlay hidden fixed inset-0 bg-black/40 z-[60] flex items-center justify-center">
+  <div class="modal-box bg-white rounded-lg shadow-xl w-full max-w-sm mx-4">
+    <div class="px-6 py-5">
+      <p id="confirmMsg" class="text-sm text-textPrimary"></p>
+    </div>
+    <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
+      <button onclick="cancelConfirm()" class="border border-gray-300 text-textSecondary px-4 py-1.5 rounded text-sm hover:border-primary hover:text-primary transition-colors">取消</button>
+      <button id="confirmBtn" onclick="doConfirm()" class="bg-danger text-white px-4 py-1.5 rounded text-sm hover:bg-dangerHover transition-colors">确认删除</button>
+    </div>
+  </div>
+</div>
 
-        // 初始化页面
-        function init() {
-            renderTable();
-            bindEvents();
-        }
+<script>
+// --- Data ---
+const now = () => new Date().toLocaleString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' }).replace(/\//g, '-');
 
-        // 渲染表格
-        function renderTable() {
-            const tableBody = document.getElementById('tableBody');
-            const emptyState = document.getElementById('emptyState');
-            const totalCount = document.getElementById('totalCount');
-            const currentPageEl = document.getElementById('currentPage');
-            const totalPagesEl = document.getElementById('totalPages');
-            const prevPage = document.getElementById('prevPage');
-            const nextPage = document.getElementById('nextPage');
+const TYPE_MAP = {
+  '商户': { codeLabel: '商户号', nameLabel: '商户名称', codePrefix: 'M' },
+  '代理商号': { codeLabel: '代理商号', nameLabel: '代理商名称', codePrefix: 'I' },
+  '渠道商号': { codeLabel: '渠道商号', nameLabel: '渠道商名称', codePrefix: 'C' },
+};
 
-            const total = filteredData.length;
-            const totalPages = Math.ceil(total / pageSize) || 1;
-            const start = (currentPage - 1) * pageSize;
-            const end = start + pageSize;
-            const pageData = filteredData.slice(start, end);
+const TYPE_BADGE = {
+  '商户': 'bg-blue-50 text-blue-600',
+  '代理商号': 'bg-purple-50 text-purple-600',
+  '渠道商号': 'bg-orange-50 text-orange-600',
+};
 
-            totalCount.textContent = total;
-            currentPageEl.textContent = currentPage;
-            totalPagesEl.textContent = totalPages;
-            prevPage.disabled = currentPage === 1;
-            nextPage.disabled = currentPage === totalPages;
+let whitelist = [
+  { id: 1, type: '商户', code: 'M200001', name: '星火科技有限公司', operator: '张三', updateTime: '2025-12-10 09:30:00' },
+  { id: 2, type: '商户', code: 'M200002', name: '朝阳商贸集团', operator: '张三', updateTime: '2025-12-10 10:15:00' },
+  { id: 3, type: '代理商号', code: 'I300001', name: '华东代理机构', operator: '李四', updateTime: '2025-12-11 14:20:00' },
+  { id: 4, type: '代理商号', code: 'I300002', name: '', operator: '李四', updateTime: '2025-12-11 15:00:00' },
+  { id: 5, type: '渠道商号', code: 'C400001', name: '线上推广渠道A', operator: '王五', updateTime: '2025-12-12 16:45:00' },
+  { id: 6, type: '渠道商号', code: 'C400002', name: '线下合作渠道B', operator: '王五', updateTime: '2025-12-12 17:10:00' },
+  { id: 7, type: '商户', code: 'M200003', name: '瑞丰餐饮管理', operator: '赵六', updateTime: '2025-12-13 11:00:00' },
+  { id: 8, type: '商户', code: 'M200004', name: '', operator: '赵六', updateTime: '2025-12-13 11:30:00' },
+  { id: 9, type: '代理商号', code: 'I300003', name: '华南区域代理', operator: '钱七', updateTime: '2025-12-14 09:00:00' },
+  { id: 10, type: '渠道商号', code: 'C400003', name: '微信小程序渠道', operator: '孙八', updateTime: '2025-12-15 10:20:00' },
+  { id: 11, type: '商户', code: 'M200005', name: '鸿远物流有限公司', operator: '张三', updateTime: '2025-12-16 08:45:00' },
+  { id: 12, type: '渠道商号', code: 'C400004', name: '支付宝生活号渠道', operator: '孙八', updateTime: '2025-12-16 14:30:00' },
+];
 
-            if (pageData.length === 0) {
-                tableBody.innerHTML = '';
-                emptyState.classList.remove('hidden');
-                return;
-            }
+let idSeq = 13;
+let editingId = null;
+let confirmCallback = null;
+let currentPage = 1;
+const pageSize = 10;
+let filteredData = [...whitelist];
 
-            emptyState.classList.add('hidden');
-            tableBody.innerHTML = pageData.map(item => `
-                <tr class="border-b border-gray-200 table-hover-row">
-                    <td class="px-4 py-3">
-                        <input type="checkbox" class="row-checkbox rounded" data-id="${item.id}" ${selectedIds.has(item.id) ? 'checked' : ''}>
-                    </td>
-                    <td class="px-4 py-3 text-sm">
-                        <span class="px-2 py-1 rounded-full text-xs font-medium ${
-                            item.type === 'merchant' ? 'bg-blue-100 text-blue-800' :
-                            item.type === 'org' ? 'bg-green-100 text-green-800' :
-                            'bg-purple-100 text-purple-800'
-                        }">
-                            ${typeMap[item.type]}
-                        </span>
-                    </td>
-                    <td class="px-4 py-3 text-sm">${item.no}</td>
-                    <td class="px-4 py-3 text-sm">${item.name || '-'}</td>
-                    <td class="px-4 py-3 text-sm text-gray-500">${item.createTime}</td>
-                    <td class="px-4 py-3 text-sm space-x-2">
-                        <button class="edit-btn text-primary hover:text-primary/80" data-id="${item.id}">
-                            <i class="fa fa-pencil"></i> 编辑
-                        </button>
-                        <button class="delete-btn text-danger hover:text-danger/80" data-id="${item.id}">
-                            <i class="fa fa-trash"></i> 删除
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
+// --- Toast ---
+function showToast(msg, type = 'success') {
+  const colors = { success: 'bg-green-500', error: 'bg-red-500', info: 'bg-primary' };
+  const el = document.createElement('div');
+  el.className = `toast ${colors[type] || colors.info} text-white px-5 py-2.5 rounded shadow-lg text-sm`;
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 2200);
+}
 
-            updateBatchDeleteButton();
-        }
+// --- Pagination ---
+function getPagedData() {
+  const start = (currentPage - 1) * pageSize;
+  return filteredData.slice(start, start + pageSize);
+}
 
-        // 绑定事件
-        function bindEvents() {
-            // 搜索
-            document.getElementById('searchBtn').addEventListener('click', search);
-            document.getElementById('resetBtn').addEventListener('click', resetSearch);
+function getTotalPages() {
+  return Math.max(1, Math.ceil(filteredData.length / pageSize));
+}
 
-            // 全选
-            document.getElementById('selectAll').addEventListener('change', handleSelectAll);
+function goPage(dir) {
+  if (dir === 'prev' && currentPage > 1) currentPage--;
+  else if (dir === 'next' && currentPage < getTotalPages()) currentPage++;
+  renderTable();
+}
 
-            // 行选择
-            document.getElementById('tableBody').addEventListener('change', (e) => {
-                if (e.target.classList.contains('row-checkbox')) {
-                    const id = parseInt(e.target.dataset.id);
-                    if (e.target.checked) {
-                        selectedIds.add(id);
-                    } else {
-                        selectedIds.delete(id);
-                    }
-                    updateSelectAllCheckbox();
-                    updateBatchDeleteButton();
-                }
-            });
+function updatePagination() {
+  document.getElementById('pageInfo').textContent = `第 ${currentPage} 页 / 共 ${getTotalPages()} 页（共 ${filteredData.length} 条）`;
+  updateSelectedCount();
+}
 
-            // 单个新增
-            document.getElementById('addBtn').addEventListener('click', () => {
-                editingId = null;
-                document.getElementById('modalTitle').textContent = '新增白名单';
-                document.getElementById('type').value = 'merchant';
-                document.getElementById('no').value = '';
-                document.getElementById('name').value = '';
-                showModal();
-            });
+// --- Checkbox ---
+function toggleCheckAll() {
+  const checked = document.getElementById('checkAll').checked;
+  const paged = getPagedData();
+  const pagedIds = new Set(paged.map(d => d.id));
+  document.querySelectorAll('.row-check').forEach(cb => {
+    cb.checked = checked;
+  });
+  updateSelectedCount();
+}
 
-            // 批量新增
-            document.getElementById('batchAddBtn').addEventListener('click', () => {
-                document.getElementById('batchInput').value = '';
-                showBatchAddModal();
-            });
+function updateSelectedCount() {
+  const count = document.querySelectorAll('.row-check:checked').length;
+  document.getElementById('selectedCount').textContent = `已选择 ${count} 项`;
+  // Update checkAll state
+  const allChecks = document.querySelectorAll('.row-check');
+  document.getElementById('checkAll').checked = allChecks.length > 0 && Array.from(allChecks).every(cb => cb.checked);
+}
 
-            // 编辑
-            document.getElementById('tableBody').addEventListener('click', (e) => {
-                if (e.target.closest('.edit-btn')) {
-                    const id = parseInt(e.target.closest('.edit-btn').dataset.id);
-                    const item = data.find(i => i.id === id);
-                    if (item) {
-                        editingId = id;
-                        document.getElementById('modalTitle').textContent = '编辑白名单';
-                        document.getElementById('type').value = item.type;
-                        document.getElementById('no').value = item.no;
-                        document.getElementById('name').value = item.name;
-                        showModal();
-                    }
-                }
-            });
+function getSelectedIds() {
+  return Array.from(document.querySelectorAll('.row-check:checked')).map(cb => parseInt(cb.value));
+}
 
-            // 删除
-            document.getElementById('tableBody').addEventListener('click', (e) => {
-                if (e.target.closest('.delete-btn')) {
-                    const id = parseInt(e.target.closest('.delete-btn').dataset.id);
-                    showConfirmModal('确定要删除这条记录吗？此操作不可恢复。', () => {
-                        deleteItem(id);
-                    });
-                }
-            });
+// --- Render Table ---
+function renderTable() {
+  const data = getPagedData();
+  const tbody = document.getElementById('whitelistTableBody');
+  const empty = document.getElementById('emptyTip');
 
-            // 批量删除
-            document.getElementById('batchDeleteBtn').addEventListener('click', () => {
-                showConfirmModal(`确定要删除选中的 ${selectedIds.size} 条记录吗？此操作不可恢复。`, () => {
-                    batchDelete();
-                });
-            });
+  if (!filteredData.length) {
+    tbody.innerHTML = '';
+    empty.classList.remove('hidden');
+    document.getElementById('paginationBar').classList.add('hidden');
+    return;
+  }
 
-            // 导出
-            document.getElementById('exportBtn').addEventListener('click', exportData);
+  empty.classList.add('hidden');
+  document.getElementById('paginationBar').classList.remove('hidden');
 
-            // 弹窗关闭
-            document.getElementById('closeModal').addEventListener('click', hideModal);
-            document.getElementById('cancelBtn').addEventListener('click', hideModal);
-            document.getElementById('closeBatchAddModal').addEventListener('click', hideBatchAddModal);
-            document.getElementById('cancelBatchAddBtn').addEventListener('click', hideBatchAddModal);
-            document.getElementById('cancelConfirmBtn').addEventListener('click', hideConfirmModal);
+  tbody.innerHTML = data.map(d => {
+    const badgeClass = TYPE_BADGE[d.type] || 'bg-gray-50 text-gray-600';
+    const nameDisplay = d.name || '<span class="text-textSecondary">--</span>';
+    return `
+    <tr class="hover:bg-gray-50 transition-colors">
+      <td class="px-3 py-3 text-center">
+        <div class="checkbox-wrap"><input type="checkbox" class="row-check" value="${d.id}" onchange="updateSelectedCount()"></div>
+      </td>
+      <td class="px-3 py-3 text-textSecondary text-xs">${d.id}</td>
+      <td class="px-3 py-3"><span class="inline-block px-2 py-0.5 rounded text-xs font-medium ${badgeClass}">${d.type}</span></td>
+      <td class="px-3 py-3 text-textPrimary font-mono text-xs">${d.code}</td>
+      <td class="px-3 py-3 text-textPrimary">${nameDisplay}</td>
+      <td class="px-3 py-3 text-textSecondary">${d.operator}</td>
+      <td class="px-3 py-3 text-textSecondary text-xs">${d.updateTime}</td>
+      <td class="px-3 py-3">
+        <div class="flex items-center gap-2 flex-nowrap">
+          <button onclick="openEditModal(${d.id})" class="text-primary hover:text-primaryHover text-xs transition-colors whitespace-nowrap">编辑</button>
+          <button onclick="confirmDelete(${d.id})" class="text-danger hover:text-dangerHover text-xs transition-colors whitespace-nowrap">删除</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
 
-            // 保存
-            document.getElementById('saveBtn').addEventListener('click', saveItem);
-            document.getElementById('saveBatchAddBtn').addEventListener('click', saveBatchAdd);
-            document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
-                if (window.confirmCallback) {
-                    window.confirmCallback();
-                    window.confirmCallback = null;
-                }
-                hideConfirmModal();
-            });
+  updatePagination();
+}
 
-            // 分页
-            document.getElementById('prevPage').addEventListener('click', () => {
-                if (currentPage > 1) {
-                    currentPage--;
-                    renderTable();
-                }
-            });
+// --- Filter ---
+function filterList() {
+  const merchantNo = document.getElementById('filterMerchantNo').value.trim().toLowerCase();
+  const merchantName = document.getElementById('filterMerchantName').value.trim().toLowerCase();
+  const instNo = document.getElementById('filterInstNo').value.trim().toLowerCase();
+  const instName = document.getElementById('filterInstName').value.trim().toLowerCase();
+  const channelNo = document.getElementById('filterChannelNo').value.trim().toLowerCase();
+  const channelName = document.getElementById('filterChannelName').value.trim().toLowerCase();
 
-            document.getElementById('nextPage').addEventListener('click', () => {
-                const totalPages = Math.ceil(filteredData.length / pageSize);
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    renderTable();
-                }
-            });
-        }
+  filteredData = whitelist.filter(d => {
+    if (merchantNo && !(d.type === '商户' && d.code.toLowerCase().includes(merchantNo))) return false;
+    if (merchantName && !(d.type === '商户' && (d.name || '').toLowerCase().includes(merchantName))) return false;
+    if (instNo && !(d.type === '代理商号' && d.code.toLowerCase().includes(instNo))) return false;
+    if (instName && !(d.type === '代理商号' && (d.name || '').toLowerCase().includes(instName))) return false;
+    if (channelNo && !(d.type === '渠道商号' && d.code.toLowerCase().includes(channelNo))) return false;
+    if (channelName && !(d.type === '渠道商号' && (d.name || '').toLowerCase().includes(channelName))) return false;
+    return true;
+  });
 
-        // 搜索
-        function search() {
-            const merchantNo = document.getElementById('searchMerchantNo').value.trim();
-            const orgNo = document.getElementById('searchOrgNo').value.trim();
-            const channelNo = document.getElementById('searchChannelNo').value.trim();
-            const merchantName = document.getElementById('searchMerchantName').value.trim();
-            const orgName = document.getElementById('searchOrgName').value.trim();
-            const channelName = document.getElementById('searchChannelName').value.trim();
+  currentPage = 1;
+  renderTable();
+}
 
-            filteredData = data.filter(item => {
-                if (merchantNo && (item.type !== 'merchant' || !item.no.includes(merchantNo))) return false;
-                if (orgNo && (item.type !== 'org' || !item.no.includes(orgNo))) return false;
-                if (channelNo && (item.type !== 'channel' || !item.no.includes(channelNo))) return false;
-                if (merchantName && (item.type !== 'merchant' || !item.name.includes(merchantName))) return false;
-                if (orgName && (item.type !== 'org' || !item.name.includes(orgName))) return false;
-                if (channelName && (item.type !== 'channel' || !item.name.includes(channelName))) return false;
-                return true;
-            });
+function resetFilter() {
+  document.getElementById('filterMerchantNo').value = '';
+  document.getElementById('filterMerchantName').value = '';
+  document.getElementById('filterInstNo').value = '';
+  document.getElementById('filterInstName').value = '';
+  document.getElementById('filterChannelNo').value = '';
+  document.getElementById('filterChannelName').value = '';
+  filteredData = [...whitelist];
+  currentPage = 1;
+  renderTable();
+}
 
-            currentPage = 1;
-            selectedIds.clear();
-            renderTable();
-        }
+// --- Type change helpers ---
+function updateFormLabels() {
+  const type = document.getElementById('formType').value;
+  const info = TYPE_MAP[type];
+  document.getElementById('formCodeLabel').innerHTML = info.codeLabel + ' <span class="text-danger">*</span>';
+  document.getElementById('formCode').placeholder = '请输入' + info.codeLabel;
+  document.getElementById('formNameLabel').textContent = info.nameLabel;
+  document.getElementById('formName').placeholder = '选填，请输入' + info.nameLabel;
+}
 
-        // 重置搜索
-        function resetSearch() {
-            document.getElementById('searchMerchantNo').value = '';
-            document.getElementById('searchOrgNo').value = '';
-            document.getElementById('searchChannelNo').value = '';
-            document.getElementById('searchMerchantName').value = '';
-            document.getElementById('searchOrgName').value = '';
-            document.getElementById('searchChannelName').value = '';
-            filteredData = [...data];
-            currentPage = 1;
-            selectedIds.clear();
-            renderTable();
-        }
+function updateBatchPlaceholder() {
+  const type = document.getElementById('batchType').value;
+  const info = TYPE_MAP[type];
+  document.getElementById('batchContent').placeholder = `${info.codePrefix}00001,示例${info.nameLabel}1\n${info.codePrefix}00002,示例${info.nameLabel}2\n${info.codePrefix}00003`;
+}
 
-        // 全选处理
-        function handleSelectAll(e) {
-            const isChecked = e.target.checked;
-            const checkboxes = document.querySelectorAll('.row-checkbox');
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = isChecked;
-                const id = parseInt(checkbox.dataset.id);
-                if (isChecked) {
-                    selectedIds.add(id);
-                } else {
-                    selectedIds.delete(id);
-                }
-            });
-            updateBatchDeleteButton();
-        }
+// --- Modal: Single Add ---
+function openAddModal() {
+  editingId = null;
+  document.getElementById('formModalTitle').textContent = '新增白名单';
+  clearForm();
+  document.getElementById('formModal').classList.remove('hidden');
+}
 
-        // 更新全选复选框状态
-        function updateSelectAllCheckbox() {
-            const checkboxes = document.querySelectorAll('.row-checkbox');
-            const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
-            const someChecked = Array.from(checkboxes).some(cb => cb.checked);
-            document.getElementById('selectAll').checked = allChecked;
-            document.getElementById('selectAll').indeterminate = someChecked && !allChecked;
-        }
+// --- Modal: Edit ---
+function openEditModal(id) {
+  const d = whitelist.find(x => x.id === id);
+  if (!d) return;
+  editingId = id;
+  document.getElementById('formModalTitle').textContent = '编辑白名单';
+  clearForm();
+  document.getElementById('formType').value = d.type;
+  updateFormLabels();
+  document.getElementById('formCode').value = d.code;
+  document.getElementById('formName').value = d.name || '';
+  document.getElementById('formCode').readOnly = true;
+  document.getElementById('formCode').classList.add('bg-gray-50');
+  document.getElementById('formType').disabled = true;
+  document.getElementById('formType').classList.add('bg-gray-50');
+  document.getElementById('formModal').classList.remove('hidden');
+}
 
-        // 更新批量删除按钮状态
-        function updateBatchDeleteButton() {
-            document.getElementById('batchDeleteBtn').disabled = selectedIds.size === 0;
-        }
+function clearForm() {
+  document.getElementById('formType').value = '商户';
+  document.getElementById('formCode').value = '';
+  document.getElementById('formName').value = '';
+  document.getElementById('formCode').readOnly = false;
+  document.getElementById('formCode').classList.remove('bg-gray-50');
+  document.getElementById('formType').disabled = false;
+  document.getElementById('formType').classList.remove('bg-gray-50');
+  updateFormLabels();
+}
 
-        // 显示/隐藏弹窗
-        function showModal() {
-            document.getElementById('modal').classList.remove('hidden');
-        }
+function closeFormModal() {
+  document.getElementById('formModal').classList.add('hidden');
+}
 
-        function hideModal() {
-            document.getElementById('modal').classList.add('hidden');
-        }
+// --- Duplicate check ---
+function isDuplicate(type, code, excludeId) {
+  return whitelist.some(d => d.id !== excludeId && d.type === type && d.code === code);
+}
 
-        function showBatchAddModal() {
-            document.getElementById('batchAddModal').classList.remove('hidden');
-        }
+function submitForm() {
+  const type = document.getElementById('formType').value;
+  const code = document.getElementById('formCode').value.trim();
+  const name = document.getElementById('formName').value.trim();
 
-        function hideBatchAddModal() {
-            document.getElementById('batchAddModal').classList.add('hidden');
-        }
+  if (!code) {
+    showToast('请输入' + TYPE_MAP[type].codeLabel, 'error');
+    return;
+  }
 
-        function showConfirmModal(message, callback) {
-            document.getElementById('confirmMessage').textContent = message;
-            window.confirmCallback = callback;
-            document.getElementById('confirmModal').classList.remove('hidden');
-        }
+  if (editingId !== null) {
+    // Edit
+    const idx = whitelist.findIndex(x => x.id === editingId);
+    if (idx > -1) {
+      whitelist[idx].name = name;
+      whitelist[idx].operator = '当前用户';
+      whitelist[idx].updateTime = now();
+    }
+    showToast('白名单编辑成功');
+  } else {
+    // Add — check duplicate
+    if (isDuplicate(type, code, null)) {
+      showToast(`类型【${type}】下的号码【${code}】已存在，不可重复添加`, 'error');
+      return;
+    }
+    whitelist.push({ id: idSeq++, type, code, name, operator: '当前用户', updateTime: now() });
+    showToast('白名单新增成功');
+  }
 
-        function hideConfirmModal() {
-            document.getElementById('confirmModal').classList.add('hidden');
-        }
+  closeFormModal();
+  filterList();
+}
 
-        // 保存单个项目
-        function saveItem() {
-            const type = document.getElementById('type').value;
-            const no = document.getElementById('no').value.trim();
-            const name = document.getElementById('name').value.trim();
+// --- Modal: Batch Add ---
+function openBatchAddModal() {
+  document.getElementById('batchType').value = '商户';
+  document.getElementById('batchContent').value = '';
+  updateBatchPlaceholder();
+  document.getElementById('batchAddModal').classList.remove('hidden');
+}
 
-            if (!no) {
-                alert('商号不能为空');
-                return;
-            }
+function closeBatchAddModal() {
+  document.getElementById('batchAddModal').classList.add('hidden');
+}
 
-            if (editingId) {
-                // 编辑
-                const index = data.findIndex(i => i.id === editingId);
-                if (index !== -1) {
-                    data[index] = {
-                        ...data[index],
-                        type,
-                        no,
-                        name
-                    };
-                }
-            } else {
-                // 新增
-                const newId = Math.max(...data.map(i => i.id), 0) + 1;
-                data.push({
-                    id: newId,
-                    type,
-                    no,
-                    name,
-                    createTime: new Date().toISOString().replace('T', ' ').substring(0, 19)
-                });
-            }
+function submitBatchAdd() {
+  const type = document.getElementById('batchType').value;
+  const content = document.getElementById('batchContent').value.trim();
 
-            hideModal();
-            resetSearch();
-        }
+  if (!content) {
+    showToast('请输入批量新增内容', 'error');
+    return;
+  }
 
-        // 批量新增
-        function saveBatchAdd() {
-            const input = document.getElementById('batchInput').value.trim();
-            if (!input) {
-                alert('请输入数据');
-                return;
-            }
+  const lines = content.split('\n').map(l => l.trim()).filter(l => l);
+  const added = [];
+  const skipped = [];
 
-            const lines = input.split('\n').filter(line => line.trim());
-            if (lines.length > 100) {
-                alert('最多支持100条数据');
-                return;
-            }
+  lines.forEach((line, idx) => {
+    const parts = line.split(/[,，]/);
+    const code = parts[0].trim();
+    const name = (parts[1] || '').trim();
 
-            let successCount = 0;
-            let errorCount = 0;
-            const newId = Math.max(...data.map(i => i.id), 0) + 1;
+    if (!code) {
+      skipped.push({ line: idx + 1, reason: '号码为空' });
+      return;
+    }
+    if (isDuplicate(type, code, null)) {
+      skipped.push({ line: idx + 1, reason: `号码【${code}】已存在` });
+      return;
+    }
+    added.push({ id: idSeq++, type, code, name, operator: '当前用户', updateTime: now() });
+  });
 
-            lines.forEach((line, index) => {
-                const parts = line.split(',').map(p => p.trim());
-                if (parts.length < 2 || !['merchant', 'org', 'channel'].includes(parts[0]) || !parts[1]) {
-                    errorCount++;
-                    return;
-                }
+  whitelist.push(...added);
 
-                data.push({
-                    id: newId + successCount,
-                    type: parts[0],
-                    no: parts[1],
-                    name: parts[2] || '',
-                    createTime: new Date().toISOString().replace('T', ' ').substring(0, 19)
-                });
-                successCount++;
-            });
+  if (skipped.length) {
+    const msg = skipped.map(s => `第${s.line}行：${s.reason}`).join('；');
+    showToast(`成功新增 ${added.length} 条，跳过 ${skipped.length} 条：${msg}`, 'info');
+  } else {
+    showToast(`成功新增 ${added.length} 条白名单`);
+  }
 
-            hideBatchAddModal();
-            resetSearch();
-            alert(`导入完成：成功${successCount}条，失败${errorCount}条`);
-        }
+  closeBatchAddModal();
+  filterList();
+}
 
-        // 删除单个项目
-        function deleteItem(id) {
-            data = data.filter(i => i.id !== id);
-            filteredData = filteredData.filter(i => i.id !== id);
-            selectedIds.delete(id);
-            renderTable();
-        }
+// --- Delete ---
+function confirmDelete(id) {
+  const d = whitelist.find(x => x.id === id);
+  if (!d) return;
+  showConfirm(`确认要删除【${d.type}】类型下号码为【${d.code}】的白名单吗？删除后不可恢复。`, () => {
+    whitelist = whitelist.filter(x => x.id !== id);
+    filteredData = filteredData.filter(x => x.id !== id);
+    if (currentPage > getTotalPages()) currentPage = getTotalPages();
+    renderTable();
+    showToast('删除成功');
+  });
+}
 
-        // 批量删除
-        function batchDelete() {
-            data = data.filter(i => !selectedIds.has(i.id));
-            filteredData = filteredData.filter(i => !selectedIds.has(i.id));
-            selectedIds.clear();
-            renderTable();
-        }
+function batchDelete() {
+  const ids = getSelectedIds();
+  if (!ids.length) {
+    showToast('请先选择需要删除的记录', 'error');
+    return;
+  }
+  showConfirm(`确认要删除选中的 ${ids.length} 条白名单吗？删除后不可恢复。`, () => {
+    whitelist = whitelist.filter(x => !ids.includes(x.id));
+    filteredData = filteredData.filter(x => !ids.includes(x.id));
+    if (currentPage > getTotalPages()) currentPage = getTotalPages();
+    renderTable();
+    showToast(`成功删除 ${ids.length} 条记录`);
+  });
+}
 
-        // 导出数据
-        function exportData() {
-            const exportData = filteredData.map(item => ({
-                '类型': typeMap[item.type],
-                '商号': item.no,
-                '名称': item.name,
-                '创建时间': item.createTime
-            }));
+// --- Export ---
+function exportCSV(data, filename) {
+  const BOM = '﻿';
+  const header = '编号,类型,号码,名称,操作人,更新时间';
+  const rows = data.map(d => [d.id, d.type, d.code, d.name || '', d.operator, d.updateTime].map(v => `"${v}"`).join(','));
+  const csv = BOM + header + '\n' + rows.join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
-            const ws = XLSX.utils.json_to_sheet(exportData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, '白名单');
-            XLSX.writeFile(wb, '跳转小程序白名单.xlsx');
-        }
+function exportSelected() {
+  const ids = getSelectedIds();
+  if (!ids.length) {
+    showToast('请先选择需要导出的记录', 'error');
+    return;
+  }
+  const data = whitelist.filter(x => ids.includes(x.id));
+  exportCSV(data, `白名单_选中导出_${new Date().toISOString().slice(0,10)}.csv`);
+  showToast(`成功导出 ${data.length} 条记录`);
+}
 
-        // 页面加载完成后初始化
-        document.addEventListener('DOMContentLoaded', init);
-    </script>
+function exportAll() {
+  const data = filteredData.length < whitelist.length ? filteredData : whitelist;
+  if (!data.length) {
+    showToast('当前无数据可导出', 'error');
+    return;
+  }
+  exportCSV(data, `白名单_全部导出_${new Date().toISOString().slice(0,10)}.csv`);
+  showToast(`成功导出 ${data.length} 条记录`);
+}
+
+// --- Confirm Modal ---
+function showConfirm(msg, cb) {
+  document.getElementById('confirmMsg').textContent = msg;
+  confirmCallback = cb;
+  document.getElementById('confirmModal').classList.remove('hidden');
+}
+
+function cancelConfirm() {
+  confirmCallback = null;
+  document.getElementById('confirmModal').classList.add('hidden');
+}
+
+function doConfirm() {
+  if (confirmCallback) confirmCallback();
+  confirmCallback = null;
+  document.getElementById('confirmModal').classList.add('hidden');
+}
+
+// --- Close modals on overlay click ---
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.add('hidden');
+  });
+});
+
+// --- Type change in form updates labels ---
+document.getElementById('formType').addEventListener('change', updateFormLabels);
+
+// --- Init ---
+filteredData = [...whitelist];
+renderTable();
+</script>
 </body>
 </html>
