@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>跳转小程序白名单配置</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        success: '#00B42A',
+                        warning: '#FF7D00',
+                        danger: '#F53F3F',
+                        gray: {
+                            100: '#F2F3F5',
+                            200: '#E5E6EB',
+                            300: '#C9CDD4',
+                            400: '#86909C',
+                            500: '#4E5969',
+                            600: '#272E3B',
+                            700: '#1D2129',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .table-hover-row:hover {
+                background-color: #F7F8FA;
+            }
+            .btn {
+                @apply px-3 py-1.5 rounded text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+            }
+            .btn-primary {
+                @apply bg-primary text-white hover:bg-primary/90 focus:ring-primary/50;
+            }
+            .btn-default {
+                @apply bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 focus:ring-gray-200;
+            }
+            .btn-danger {
+                @apply bg-danger text-white hover:bg-danger/90 focus:ring-danger/50;
+            }
+            .input {
+                @apply w-full px-3 py-2 border border-gray-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary;
+            }
+            .select {
+                @apply w-full px-3 py-2 border border-gray-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-700">
+    <div class="min-h-screen flex flex-col">
+        <!-- 顶部导航 -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+                <h1 class="text-xl font-semibold text-gray-700">跳转小程序不验签白名单配置</h1>
+                <div class="flex items-center space-x-2">
+                    <button id="batchAddBtn" class="btn btn-primary">
+                        <i class="fa fa-plus mr-1"></i> 批量新增
+                    </button>
+                    <button id="addBtn" class="btn btn-primary">
+                        <i class="fa fa-plus mr-1"></i> 单个新增
+                    </button>
+                    <button id="exportBtn" class="btn btn-default">
+                        <i class="fa fa-download mr-1"></i> 批量导出
+                    </button>
+                    <button id="batchDeleteBtn" class="btn btn-danger" disabled>
+                        <i class="fa fa-trash mr-1"></i> 批量删除
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主内容区 -->
+        <main class="flex-1 container mx-auto px-4 py-6">
+            <!-- 搜索区域 -->
+            <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-500 mb-1">商户号</label>
+                        <input type="text" id="searchMerchantNo" class="input" placeholder="请输入商户号">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-500 mb-1">机构商号</label>
+                        <input type="text" id="searchOrgNo" class="input" placeholder="请输入机构商号">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-500 mb-1">渠道商号</label>
+                        <input type="text" id="searchChannelNo" class="input" placeholder="请输入渠道商号">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-500 mb-1">商户名称</label>
+                        <input type="text" id="searchMerchantName" class="input" placeholder="请输入商户名称">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-500 mb-1">机构名称</label>
+                        <input type="text" id="searchOrgName" class="input" placeholder="请输入机构名称">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-500 mb-1">渠道名称</label>
+                        <input type="text" id="searchChannelName" class="input" placeholder="请输入渠道名称">
+                    </div>
+                </div>
+                <div class="flex justify-end mt-4 space-x-2">
+                    <button id="resetBtn" class="btn btn-default">重置</button>
+                    <button id="searchBtn" class="btn btn-primary">查询</button>
+                </div>
+            </div>
+
+            <!-- 表格区域 -->
+            <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="bg-gray-50 border-b border-gray-200">
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                                    <input type="checkbox" id="selectAll" class="rounded">
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">类型</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">商号</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">名称</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">创建时间</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- 数据行将通过JS动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 空状态 -->
+                <div id="emptyState" class="py-16 text-center text-gray-400 hidden">
+                    <i class="fa fa-inbox text-4xl mb-4"></i>
+                    <p>暂无数据</p>
+                </div>
+
+                <!-- 分页 -->
+                <div class="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
+                    <div class="text-sm text-gray-500">
+                        共 <span id="totalCount">0</span> 条数据
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button id="prevPage" class="btn btn-default" disabled>上一页</button>
+                        <span class="text-sm text-gray-500">
+                            第 <span id="currentPage">1</span> / <span id="totalPages">1</span> 页
+                        </span>
+                        <button id="nextPage" class="btn btn-default" disabled>下一页</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 新增/编辑弹窗 -->
+    <div id="modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 id="modalTitle" class="text-lg font-semibold text-gray-700">新增白名单</h3>
+                <button id="closeModal" class="text-gray-400 hover:text-gray-600">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="px-6 py-4 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-500 mb-1">类型 <span class="text-danger">*</span></label>
+                    <select id="type" class="select">
+                        <option value="merchant">商户号</option>
+                        <option value="org">机构商号</option>
+                        <option value="channel">渠道商号</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-500 mb-1">商号 <span class="text-danger">*</span></label>
+                    <input type="text" id="no" class="input" placeholder="请输入商号">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-500 mb-1">名称</label>
+                    <input type="text" id="name" class="input" placeholder="请输入名称（非必填）">
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-2">
+                <button id="cancelBtn" class="btn btn-default">取消</button>
+                <button id="saveBtn" class="btn btn-primary">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量新增弹窗 -->
+    <div id="batchAddModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-700">批量新增白名单</h3>
+                <button id="closeBatchAddModal" class="text-gray-400 hover:text-gray-600">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="px-6 py-4 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-500 mb-1">批量输入</label>
+                    <textarea id="batchInput" class="input h-40" placeholder="每行一条，格式：类型,商号,名称&#10;类型可选：merchant(商户号)、org(机构商号)、channel(渠道商号)&#10;名称非必填&#10;示例：&#10;merchant,123456789,测试商户&#10;org,987654321,测试机构"></textarea>
+                </div>
+                <div class="text-sm text-gray-500">
+                    <p>提示：每行一条数据，逗号分隔，最多支持100条</p>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-2">
+                <button id="cancelBatchAddBtn" class="btn btn-default">取消</button>
+                <button id="saveBatchAddBtn" class="btn btn-primary">导入</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 确认删除弹窗 -->
+    <div id="confirmModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-700">确认删除</h3>
+            </div>
+            <div class="px-6 py-4">
+                <p id="confirmMessage" class="text-gray-600">确定要删除这条记录吗？此操作不可恢复。</p>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-2">
+                <button id="cancelConfirmBtn" class="btn btn-default">取消</button>
+                <button id="confirmDeleteBtn" class="btn btn-danger">删除</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟数据
+        let data = [
+            { id: 1, type: 'merchant', no: '1000000001', name: '商户A', createTime: '2026-05-20 10:30:00' },
+            { id: 2, type: 'merchant', no: '1000000002', name: '商户B', createTime: '2026-05-21 14:20:00' },
+            { id: 3, type: 'org', no: '2000000001', name: '机构A', createTime: '2026-05-22 09:15:00' },
+            { id: 4, type: 'channel', no: '3000000001', name: '渠道A', createTime: '2026-05-23 16:45:00' },
+            { id: 5, type: 'merchant', no: '1000000003', name: '', createTime: '2026-05-24 11:00:00' },
+        ];
+
+        let currentPage = 1;
+        const pageSize = 10;
+        let filteredData = [...data];
+        let selectedIds = new Set();
+        let editingId = null;
+
+        // 类型映射
+        const typeMap = {
+            merchant: '商户号',
+            org: '机构商号',
+            channel: '渠道商号'
+        };
+
+        // 初始化页面
+        function init() {
+            renderTable();
+            bindEvents();
+        }
+
+        // 渲染表格
+        function renderTable() {
+            const tableBody = document.getElementById('tableBody');
+            const emptyState = document.getElementById('emptyState');
+            const totalCount = document.getElementById('totalCount');
+            const currentPageEl = document.getElementById('currentPage');
+            const totalPagesEl = document.getElementById('totalPages');
+            const prevPage = document.getElementById('prevPage');
+            const nextPage = document.getElementById('nextPage');
+
+            const total = filteredData.length;
+            const totalPages = Math.ceil(total / pageSize) || 1;
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+            const pageData = filteredData.slice(start, end);
+
+            totalCount.textContent = total;
+            currentPageEl.textContent = currentPage;
+            totalPagesEl.textContent = totalPages;
+            prevPage.disabled = currentPage === 1;
+            nextPage.disabled = currentPage === totalPages;
+
+            if (pageData.length === 0) {
+                tableBody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            tableBody.innerHTML = pageData.map(item => `
+                <tr class="border-b border-gray-200 table-hover-row">
+                    <td class="px-4 py-3">
+                        <input type="checkbox" class="row-checkbox rounded" data-id="${item.id}" ${selectedIds.has(item.id) ? 'checked' : ''}>
+                    </td>
+                    <td class="px-4 py-3 text-sm">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium ${
+                            item.type === 'merchant' ? 'bg-blue-100 text-blue-800' :
+                            item.type === 'org' ? 'bg-green-100 text-green-800' :
+                            'bg-purple-100 text-purple-800'
+                        }">
+                            ${typeMap[item.type]}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-sm">${item.no}</td>
+                    <td class="px-4 py-3 text-sm">${item.name || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-500">${item.createTime}</td>
+                    <td class="px-4 py-3 text-sm space-x-2">
+                        <button class="edit-btn text-primary hover:text-primary/80" data-id="${item.id}">
+                            <i class="fa fa-pencil"></i> 编辑
+                        </button>
+                        <button class="delete-btn text-danger hover:text-danger/80" data-id="${item.id}">
+                            <i class="fa fa-trash"></i> 删除
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+
+            updateBatchDeleteButton();
+        }
+
+        // 绑定事件
+        function bindEvents() {
+            // 搜索
+            document.getElementById('searchBtn').addEventListener('click', search);
+            document.getElementById('resetBtn').addEventListener('click', resetSearch);
+
+            // 全选
+            document.getElementById('selectAll').addEventListener('change', handleSelectAll);
+
+            // 行选择
+            document.getElementById('tableBody').addEventListener('change', (e) => {
+                if (e.target.classList.contains('row-checkbox')) {
+                    const id = parseInt(e.target.dataset.id);
+                    if (e.target.checked) {
+                        selectedIds.add(id);
+                    } else {
+                        selectedIds.delete(id);
+                    }
+                    updateSelectAllCheckbox();
+                    updateBatchDeleteButton();
+                }
+            });
+
+            // 单个新增
+            document.getElementById('addBtn').addEventListener('click', () => {
+                editingId = null;
+                document.getElementById('modalTitle').textContent = '新增白名单';
+                document.getElementById('type').value = 'merchant';
+                document.getElementById('no').value = '';
+                document.getElementById('name').value = '';
+                showModal();
+            });
+
+            // 批量新增
+            document.getElementById('batchAddBtn').addEventListener('click', () => {
+                document.getElementById('batchInput').value = '';
+                showBatchAddModal();
+            });
+
+            // 编辑
+            document.getElementById('tableBody').addEventListener('click', (e) => {
+                if (e.target.closest('.edit-btn')) {
+                    const id = parseInt(e.target.closest('.edit-btn').dataset.id);
+                    const item = data.find(i => i.id === id);
+                    if (item) {
+                        editingId = id;
+                        document.getElementById('modalTitle').textContent = '编辑白名单';
+                        document.getElementById('type').value = item.type;
+                        document.getElementById('no').value = item.no;
+                        document.getElementById('name').value = item.name;
+                        showModal();
+                    }
+                }
+            });
+
+            // 删除
+            document.getElementById('tableBody').addEventListener('click', (e) => {
+                if (e.target.closest('.delete-btn')) {
+                    const id = parseInt(e.target.closest('.delete-btn').dataset.id);
+                    showConfirmModal('确定要删除这条记录吗？此操作不可恢复。', () => {
+                        deleteItem(id);
+                    });
+                }
+            });
+
+            // 批量删除
+            document.getElementById('batchDeleteBtn').addEventListener('click', () => {
+                showConfirmModal(`确定要删除选中的 ${selectedIds.size} 条记录吗？此操作不可恢复。`, () => {
+                    batchDelete();
+                });
+            });
+
+            // 导出
+            document.getElementById('exportBtn').addEventListener('click', exportData);
+
+            // 弹窗关闭
+            document.getElementById('closeModal').addEventListener('click', hideModal);
+            document.getElementById('cancelBtn').addEventListener('click', hideModal);
+            document.getElementById('closeBatchAddModal').addEventListener('click', hideBatchAddModal);
+            document.getElementById('cancelBatchAddBtn').addEventListener('click', hideBatchAddModal);
+            document.getElementById('cancelConfirmBtn').addEventListener('click', hideConfirmModal);
+
+            // 保存
+            document.getElementById('saveBtn').addEventListener('click', saveItem);
+            document.getElementById('saveBatchAddBtn').addEventListener('click', saveBatchAdd);
+            document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
+                if (window.confirmCallback) {
+                    window.confirmCallback();
+                    window.confirmCallback = null;
+                }
+                hideConfirmModal();
+            });
+
+            // 分页
+            document.getElementById('prevPage').addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderTable();
+                }
+            });
+
+            document.getElementById('nextPage').addEventListener('click', () => {
+                const totalPages = Math.ceil(filteredData.length / pageSize);
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderTable();
+                }
+            });
+        }
+
+        // 搜索
+        function search() {
+            const merchantNo = document.getElementById('searchMerchantNo').value.trim();
+            const orgNo = document.getElementById('searchOrgNo').value.trim();
+            const channelNo = document.getElementById('searchChannelNo').value.trim();
+            const merchantName = document.getElementById('searchMerchantName').value.trim();
+            const orgName = document.getElementById('searchOrgName').value.trim();
+            const channelName = document.getElementById('searchChannelName').value.trim();
+
+            filteredData = data.filter(item => {
+                if (merchantNo && (item.type !== 'merchant' || !item.no.includes(merchantNo))) return false;
+                if (orgNo && (item.type !== 'org' || !item.no.includes(orgNo))) return false;
+                if (channelNo && (item.type !== 'channel' || !item.no.includes(channelNo))) return false;
+                if (merchantName && (item.type !== 'merchant' || !item.name.includes(merchantName))) return false;
+                if (orgName && (item.type !== 'org' || !item.name.includes(orgName))) return false;
+                if (channelName && (item.type !== 'channel' || !item.name.includes(channelName))) return false;
+                return true;
+            });
+
+            currentPage = 1;
+            selectedIds.clear();
+            renderTable();
+        }
+
+        // 重置搜索
+        function resetSearch() {
+            document.getElementById('searchMerchantNo').value = '';
+            document.getElementById('searchOrgNo').value = '';
+            document.getElementById('searchChannelNo').value = '';
+            document.getElementById('searchMerchantName').value = '';
+            document.getElementById('searchOrgName').value = '';
+            document.getElementById('searchChannelName').value = '';
+            filteredData = [...data];
+            currentPage = 1;
+            selectedIds.clear();
+            renderTable();
+        }
+
+        // 全选处理
+        function handleSelectAll(e) {
+            const isChecked = e.target.checked;
+            const checkboxes = document.querySelectorAll('.row-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+                const id = parseInt(checkbox.dataset.id);
+                if (isChecked) {
+                    selectedIds.add(id);
+                } else {
+                    selectedIds.delete(id);
+                }
+            });
+            updateBatchDeleteButton();
+        }
+
+        // 更新全选复选框状态
+        function updateSelectAllCheckbox() {
+            const checkboxes = document.querySelectorAll('.row-checkbox');
+            const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every(cb => cb.checked);
+            const someChecked = Array.from(checkboxes).some(cb => cb.checked);
+            document.getElementById('selectAll').checked = allChecked;
+            document.getElementById('selectAll').indeterminate = someChecked && !allChecked;
+        }
+
+        // 更新批量删除按钮状态
+        function updateBatchDeleteButton() {
+            document.getElementById('batchDeleteBtn').disabled = selectedIds.size === 0;
+        }
+
+        // 显示/隐藏弹窗
+        function showModal() {
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function hideModal() {
+            document.getElementById('modal').classList.add('hidden');
+        }
+
+        function showBatchAddModal() {
+            document.getElementById('batchAddModal').classList.remove('hidden');
+        }
+
+        function hideBatchAddModal() {
+            document.getElementById('batchAddModal').classList.add('hidden');
+        }
+
+        function showConfirmModal(message, callback) {
+            document.getElementById('confirmMessage').textContent = message;
+            window.confirmCallback = callback;
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        function hideConfirmModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+        }
+
+        // 保存单个项目
+        function saveItem() {
+            const type = document.getElementById('type').value;
+            const no = document.getElementById('no').value.trim();
+            const name = document.getElementById('name').value.trim();
+
+            if (!no) {
+                alert('商号不能为空');
+                return;
+            }
+
+            if (editingId) {
+                // 编辑
+                const index = data.findIndex(i => i.id === editingId);
+                if (index !== -1) {
+                    data[index] = {
+                        ...data[index],
+                        type,
+                        no,
+                        name
+                    };
+                }
+            } else {
+                // 新增
+                const newId = Math.max(...data.map(i => i.id), 0) + 1;
+                data.push({
+                    id: newId,
+                    type,
+                    no,
+                    name,
+                    createTime: new Date().toISOString().replace('T', ' ').substring(0, 19)
+                });
+            }
+
+            hideModal();
+            resetSearch();
+        }
+
+        // 批量新增
+        function saveBatchAdd() {
+            const input = document.getElementById('batchInput').value.trim();
+            if (!input) {
+                alert('请输入数据');
+                return;
+            }
+
+            const lines = input.split('\n').filter(line => line.trim());
+            if (lines.length > 100) {
+                alert('最多支持100条数据');
+                return;
+            }
+
+            let successCount = 0;
+            let errorCount = 0;
+            const newId = Math.max(...data.map(i => i.id), 0) + 1;
+
+            lines.forEach((line, index) => {
+                const parts = line.split(',').map(p => p.trim());
+                if (parts.length < 2 || !['merchant', 'org', 'channel'].includes(parts[0]) || !parts[1]) {
+                    errorCount++;
+                    return;
+                }
+
+                data.push({
+                    id: newId + successCount,
+                    type: parts[0],
+                    no: parts[1],
+                    name: parts[2] || '',
+                    createTime: new Date().toISOString().replace('T', ' ').substring(0, 19)
+                });
+                successCount++;
+            });
+
+            hideBatchAddModal();
+            resetSearch();
+            alert(`导入完成：成功${successCount}条，失败${errorCount}条`);
+        }
+
+        // 删除单个项目
+        function deleteItem(id) {
+            data = data.filter(i => i.id !== id);
+            filteredData = filteredData.filter(i => i.id !== id);
+            selectedIds.delete(id);
+            renderTable();
+        }
+
+        // 批量删除
+        function batchDelete() {
+            data = data.filter(i => !selectedIds.has(i.id));
+            filteredData = filteredData.filter(i => !selectedIds.has(i.id));
+            selectedIds.clear();
+            renderTable();
+        }
+
+        // 导出数据
+        function exportData() {
+            const exportData = filteredData.map(item => ({
+                '类型': typeMap[item.type],
+                '商号': item.no,
+                '名称': item.name,
+                '创建时间': item.createTime
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '白名单');
+            XLSX.writeFile(wb, '跳转小程序白名单.xlsx');
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
