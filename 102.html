@@ -105,26 +105,23 @@ th, td { border: 1px solid #f0f0f0; }
             <input id="filterObjNo" type="text" placeholder="请输入对象号" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[140px]">
           </div>
           <div class="flex flex-col gap-1">
+            <label class="text-xs text-textSecondary">围栏状态</label>
+            <select id="filterStatus" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[100px]">
+              <option value="">全部</option>
+              <option value="生效">生效</option>
+              <option value="停用">停用</option>
+            </select>
+          </div>
+          <div class="flex flex-col gap-1">
             <label class="text-xs text-textSecondary">筛选条件</label>
-            <select id="filterCondition" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[140px]">
-              <option value="">不限</option>
-              <optgroup label="围栏状态">
-                <option value="状态-生效">生效</option>
-                <option value="状态-停用">停用</option>
-              </optgroup>
-              <optgroup label="比对维度">
-                <option value="维度-省">省</option>
-                <option value="维度-市">市</option>
-                <option value="维度-距离">距离</option>
-              </optgroup>
-              <optgroup label="转换方式">
-                <option value="转换-经纬度">经纬度</option>
-                <option value="转换-IP">IP</option>
-              </optgroup>
-              <optgroup label="白名单">
-                <option value="白名单-是">是</option>
-                <option value="白名单-否">否</option>
-              </optgroup>
+            <select id="filterCondition" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[160px]">
+              <option value="">全部</option>
+              <option value="白名单">白名单</option>
+              <option value="经纬度+距离">经纬度+距离</option>
+              <option value="经纬度+省">经纬度+省</option>
+              <option value="经纬度+市">经纬度+市</option>
+              <option value="IP+省">IP+省</option>
+              <option value="IP+市">IP+市</option>
             </select>
           </div>
           <button onclick="filterList()" class="bg-primary text-white px-4 py-1.5 rounded text-sm hover:bg-primaryHover transition-colors">查询</button>
@@ -372,20 +369,19 @@ function showToast(msg, type = 'success') {
 function getFilteredData() {
   const objType = document.getElementById('filterObjType').value;
   const objNo = document.getElementById('filterObjNo').value.trim().toLowerCase();
+  const status = document.getElementById('filterStatus').value;
   const condition = document.getElementById('filterCondition').value;
   return dataList.filter(d => {
     if (objType && d.objType !== objType) return false;
     if (objNo && !d.objNo.toLowerCase().includes(objNo)) return false;
+    if (status && d.status !== status) return false;
     if (condition) {
-      if (condition === '状态-生效' && d.status !== '生效') return false;
-      if (condition === '状态-停用' && d.status !== '停用') return false;
-      if (condition === '维度-省' && d.dimension !== '省') return false;
-      if (condition === '维度-市' && d.dimension !== '市') return false;
-      if (condition === '维度-距离' && d.dimension !== '距离') return false;
-      if (condition === '转换-经纬度' && d.locationMethod !== '经纬度') return false;
-      if (condition === '转换-IP' && d.locationMethod !== 'IP') return false;
-      if (condition === '白名单-是' && !d.whitelist) return false;
-      if (condition === '白名单-否' && d.whitelist) return false;
+      if (condition === '白名单' && !d.whitelist) return false;
+      if (condition === '经纬度+距离' && !(d.locationMethod === '经纬度' && d.dimension === '距离')) return false;
+      if (condition === '经纬度+省' && !(d.locationMethod === '经纬度' && d.dimension === '省')) return false;
+      if (condition === '经纬度+市' && !(d.locationMethod === '经纬度' && d.dimension === '市')) return false;
+      if (condition === 'IP+省' && !(d.locationMethod === 'IP' && d.dimension === '省')) return false;
+      if (condition === 'IP+市' && !(d.locationMethod === 'IP' && d.dimension === '市')) return false;
     }
     return true;
   });
@@ -518,6 +514,7 @@ function filterList() {
 function resetFilter() {
   document.getElementById('filterObjType').value = '';
   document.getElementById('filterObjNo').value = '';
+  document.getElementById('filterStatus').value = '';
   document.getElementById('filterCondition').value = '';
   currentPage = 1;
   selectedIds.clear();
