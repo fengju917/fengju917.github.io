@@ -115,6 +115,7 @@ th, td { border: 1px solid #f0f0f0; }
               <optgroup label="比对维度">
                 <option value="维度-省">省</option>
                 <option value="维度-市">市</option>
+                <option value="维度-距离">距离</option>
               </optgroup>
               <optgroup label="转换方式">
                 <option value="转换-经纬度">经纬度</option>
@@ -213,17 +214,22 @@ th, td { border: 1px solid #f0f0f0; }
           <div class="flex gap-6">
             <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="radio" name="dimension" value="省" class="accent-primary"> 省</label>
             <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="radio" name="dimension" value="市" class="accent-primary"> 市</label>
+            <label id="dimensionDistanceLabel" class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="radio" name="dimension" value="距离" class="accent-primary" onchange="onDimensionChange()"> 距离</label>
           </div>
-          <p class="text-xs text-textSecondary">比对商户注册地址与交易地址的精度层级：省=同省放行，市=同市放行</p>
+          <div id="distanceInputWrap" class="flex flex-col gap-1.5 hidden mt-2">
+            <label class="text-sm text-textPrimary">距离（米） <span class="text-danger">*</span></label>
+            <input id="formDistance" type="number" min="1" placeholder="请输入距离，单位米" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary w-48">
+          </div>
+          <p class="text-xs text-textSecondary">比对商户注册地址与交易地址的精度层级：省=同省放行，市=同市放行，距离=注册地址半径范围内放行</p>
         </div>
         <!-- 转换方式 -->
         <div class="flex flex-col gap-1.5">
           <label class="text-sm text-textPrimary">转换方式 <span class="text-danger">*</span></label>
           <div class="flex gap-6">
-            <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="radio" name="locationMethod" value="经纬度" class="accent-primary"> 经纬度</label>
-            <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="radio" name="locationMethod" value="IP" class="accent-primary"> IP</label>
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="radio" name="locationMethod" value="经纬度" class="accent-primary" onchange="onLocationMethodChange()"> 经纬度</label>
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="radio" name="locationMethod" value="IP" class="accent-primary" onchange="onLocationMethodChange()"> IP</label>
           </div>
-          <p class="text-xs text-textSecondary">获取交易地理位置的技术方式：经纬度=GPS定位解析，IP=交易IP地址解析</p>
+          <p class="text-xs text-textSecondary">获取交易地理位置的技术方式：经纬度=GPS定位解析，IP=交易IP地址解析。选择经纬度时比对维度可配置距离</p>
         </div>
         <!-- 拦截商户类型 (代理/渠道) -->
         <div id="merchantTypeSection" class="flex flex-col gap-1.5 hidden">
@@ -330,18 +336,18 @@ th, td { border: 1px solid #f0f0f0; }
 const now = () => new Date().toLocaleString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' }).replace(/\//g, '-');
 
 let dataList = [
-  { id: 1, objType: '商户', objNo: 'M100001', objName: '深圳南山区便利店', dimension: '市', locationMethod: '经纬度', merchantType: [], status: '生效', whitelist: true, operator: '张三', updateTime: '2026-06-01 10:30:00' },
-  { id: 2, objType: '商户', objNo: 'M100002', objName: '广州天河区数码店', dimension: '省', locationMethod: 'IP', merchantType: [], status: '生效', whitelist: false, operator: '李四', updateTime: '2026-06-02 14:20:00' },
-  { id: 3, objType: '代理', objNo: 'A200001', objName: '华南区域代理', dimension: '省', locationMethod: '经纬度', merchantType: ['企业', '小微'], status: '生效', whitelist: true, operator: '王五', updateTime: '2026-06-03 09:15:00' },
-  { id: 4, objType: '代理', objNo: 'A200002', objName: '华东区域代理', dimension: '市', locationMethod: 'IP', merchantType: ['个体', '事业单位'], status: '停用', whitelist: false, operator: '赵六', updateTime: '2026-06-04 16:45:00' },
-  { id: 5, objType: '渠道', objNo: 'C300001', objName: '微信支付渠道', dimension: '省', locationMethod: 'IP', merchantType: ['企业', '个体', '小微'], status: '生效', whitelist: false, operator: '张三', updateTime: '2026-06-05 11:00:00' },
-  { id: 6, objType: '渠道', objNo: 'C300002', objName: '支付宝渠道', dimension: '市', locationMethod: '经纬度', merchantType: ['企业', '个体', '小微', '事业单位', '其他组织'], status: '生效', whitelist: true, operator: '李四', updateTime: '2026-06-06 13:30:00' },
-  { id: 7, objType: '商户', objNo: 'M100003', objName: '北京朝阳区餐饮店', dimension: '省', locationMethod: '经纬度', merchantType: [], status: '生效', whitelist: false, operator: '王五', updateTime: '2026-06-07 15:00:00' },
-  { id: 8, objType: '商户', objNo: 'M100004', objName: '上海浦东新区药房', dimension: '市', locationMethod: 'IP', merchantType: [], status: '停用', whitelist: true, operator: '赵六', updateTime: '2026-06-08 09:20:00' },
-  { id: 9, objType: '代理', objNo: 'A200003', objName: '西南区域代理', dimension: '市', locationMethod: '经纬度', merchantType: ['小微', '其他组织'], status: '生效', whitelist: false, operator: '张三', updateTime: '2026-06-09 10:10:00' },
-  { id: 10, objType: '渠道', objNo: 'C300003', objName: '银联渠道', dimension: '省', locationMethod: 'IP', merchantType: ['企业'], status: '停用', whitelist: false, operator: '李四', updateTime: '2026-06-10 14:00:00' },
-  { id: 11, objType: '商户', objNo: 'M100005', objName: '杭州西湖区水果店', dimension: '市', locationMethod: '经纬度', merchantType: [], status: '生效', whitelist: false, operator: '王五', updateTime: '2026-06-10 16:30:00' },
-  { id: 12, objType: '代理', objNo: 'A200004', objName: '华北区域代理', dimension: '市', locationMethod: 'IP', merchantType: ['个体', '小微', '事业单位'], status: '生效', whitelist: false, operator: '赵六', updateTime: '2026-06-11 08:45:00' },
+  { id: 1, objType: '商户', objNo: 'M100001', objName: '深圳南山区便利店', dimension: '市', distance: null, locationMethod: '经纬度', merchantType: [], status: '生效', whitelist: true, operator: '张三', updateTime: '2026-06-01 10:30:00' },
+  { id: 2, objType: '商户', objNo: 'M100002', objName: '广州天河区数码店', dimension: '省', distance: null, locationMethod: 'IP', merchantType: [], status: '生效', whitelist: false, operator: '李四', updateTime: '2026-06-02 14:20:00' },
+  { id: 3, objType: '代理', objNo: 'A200001', objName: '华南区域代理', dimension: '省', distance: null, locationMethod: '经纬度', merchantType: ['企业', '小微'], status: '生效', whitelist: true, operator: '王五', updateTime: '2026-06-03 09:15:00' },
+  { id: 4, objType: '代理', objNo: 'A200002', objName: '华东区域代理', dimension: '距离', distance: 5000, locationMethod: '经纬度', merchantType: ['个体', '事业单位'], status: '停用', whitelist: false, operator: '赵六', updateTime: '2026-06-04 16:45:00' },
+  { id: 5, objType: '渠道', objNo: 'C300001', objName: '微信支付渠道', dimension: '省', distance: null, locationMethod: 'IP', merchantType: ['企业', '个体', '小微'], status: '生效', whitelist: false, operator: '张三', updateTime: '2026-06-05 11:00:00' },
+  { id: 6, objType: '渠道', objNo: 'C300002', objName: '支付宝渠道', dimension: '距离', distance: 3000, locationMethod: '经纬度', merchantType: ['企业', '个体', '小微', '事业单位', '其他组织'], status: '生效', whitelist: true, operator: '李四', updateTime: '2026-06-06 13:30:00' },
+  { id: 7, objType: '商户', objNo: 'M100003', objName: '北京朝阳区餐饮店', dimension: '省', distance: null, locationMethod: '经纬度', merchantType: [], status: '生效', whitelist: false, operator: '王五', updateTime: '2026-06-07 15:00:00' },
+  { id: 8, objType: '商户', objNo: 'M100004', objName: '上海浦东新区药房', dimension: '市', distance: null, locationMethod: 'IP', merchantType: [], status: '停用', whitelist: true, operator: '赵六', updateTime: '2026-06-08 09:20:00' },
+  { id: 9, objType: '代理', objNo: 'A200003', objName: '西南区域代理', dimension: '市', distance: null, locationMethod: '经纬度', merchantType: ['小微', '其他组织'], status: '生效', whitelist: false, operator: '张三', updateTime: '2026-06-09 10:10:00' },
+  { id: 10, objType: '渠道', objNo: 'C300003', objName: '银联渠道', dimension: '省', distance: null, locationMethod: 'IP', merchantType: ['企业'], status: '停用', whitelist: false, operator: '李四', updateTime: '2026-06-10 14:00:00' },
+  { id: 11, objType: '商户', objNo: 'M100005', objName: '杭州西湖区水果店', dimension: '距离', distance: 10000, locationMethod: '经纬度', merchantType: [], status: '生效', whitelist: false, operator: '王五', updateTime: '2026-06-10 16:30:00' },
+  { id: 12, objType: '代理', objNo: 'A200004', objName: '华北区域代理', dimension: '市', distance: null, locationMethod: 'IP', merchantType: ['个体', '小微', '事业单位'], status: '生效', whitelist: false, operator: '赵六', updateTime: '2026-06-11 08:45:00' },
 ];
 let idSeq = 13;
 let editingId = null;
@@ -375,6 +381,7 @@ function getFilteredData() {
       if (condition === '状态-停用' && d.status !== '停用') return false;
       if (condition === '维度-省' && d.dimension !== '省') return false;
       if (condition === '维度-市' && d.dimension !== '市') return false;
+      if (condition === '维度-距离' && d.dimension !== '距离') return false;
       if (condition === '转换-经纬度' && d.locationMethod !== '经纬度') return false;
       if (condition === '转换-IP' && d.locationMethod !== 'IP') return false;
       if (condition === '白名单-是' && !d.whitelist) return false;
@@ -402,9 +409,10 @@ function renderTable() {
     tbody.innerHTML = pageData.map(d => {
       const checked = selectedIds.has(d.id) ? 'checked' : '';
       const typeTag = { '商户': 'bg-blue-50 text-blue-600', '代理': 'bg-orange-50 text-orange-600', '渠道': 'bg-purple-50 text-purple-600' };
-      const dimTag = { '省': 'bg-cyan-50 text-cyan-600', '市': 'bg-teal-50 text-teal-600' };
+      const dimTag = { '省': 'bg-cyan-50 text-cyan-600', '市': 'bg-teal-50 text-teal-600', '距离': 'bg-indigo-50 text-indigo-600' };
       const locTag = { '经纬度': 'bg-blue-50 text-blue-600', 'IP': 'bg-violet-50 text-violet-600' };
       const merchantTypeDisplay = d.objType === '商户' ? '—' : (d.merchantType.length ? d.merchantType.join('、') : '全部');
+      const dimDisplay = d.dimension === '距离' ? `距离(${d.distance}米)` : d.dimension;
       const whitelistDisplay = d.whitelist
         ? '<span class="inline-block px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-600">是</span>'
         : '<span class="text-textSecondary">否</span>';
@@ -418,7 +426,7 @@ function renderTable() {
         <td class="px-3 py-3"><span class="inline-block px-2 py-0.5 rounded text-xs font-medium ${typeTag[d.objType]}">${d.objType}</span></td>
         <td class="px-3 py-3 text-textPrimary font-mono text-xs">${d.objNo}</td>
         <td class="px-3 py-3 text-textPrimary">${d.objName}</td>
-        <td class="px-3 py-3"><span class="inline-block px-2 py-0.5 rounded text-xs font-medium ${dimTag[d.dimension]}">${d.dimension}</span></td>
+        <td class="px-3 py-3"><span class="inline-block px-2 py-0.5 rounded text-xs font-medium ${dimTag[d.dimension]}">${dimDisplay}</span></td>
         <td class="px-3 py-3"><span class="inline-block px-2 py-0.5 rounded text-xs font-medium ${locTag[d.locationMethod]}">${d.locationMethod}</span></td>
         <td class="px-3 py-3 text-textSecondary text-xs">${merchantTypeDisplay}</td>
         <td class="px-3 py-3">
@@ -517,6 +525,37 @@ function resetFilter() {
 }
 
 // ========== Form Modal ==========
+// 转换方式联动：IP时隐藏"距离"维度选项
+function onLocationMethodChange() {
+  const locEl = document.querySelector('input[name="locationMethod"]:checked');
+  const distanceLabel = document.getElementById('dimensionDistanceLabel');
+  const distanceInputWrap = document.getElementById('distanceInputWrap');
+  if (!locEl) return;
+  if (locEl.value === '经纬度') {
+    distanceLabel.classList.remove('hidden');
+  } else {
+    distanceLabel.classList.add('hidden');
+    const dimEl = document.querySelector('input[name="dimension"]:checked');
+    if (dimEl && dimEl.value === '距离') {
+      document.querySelector('input[name="dimension"][value="省"]').checked = true;
+      distanceInputWrap.classList.add('hidden');
+      document.getElementById('formDistance').value = '';
+    }
+  }
+}
+
+// 比对维度联动：选"距离"显示输入框
+function onDimensionChange() {
+  const dimEl = document.querySelector('input[name="dimension"]:checked');
+  const distanceInputWrap = document.getElementById('distanceInputWrap');
+  if (dimEl && dimEl.value === '距离') {
+    distanceInputWrap.classList.remove('hidden');
+  } else {
+    distanceInputWrap.classList.add('hidden');
+    document.getElementById('formDistance').value = '';
+  }
+}
+
 function onObjTypeChange() {
   const t = document.getElementById('formObjType').value;
   const mtSection = document.getElementById('merchantTypeSection');
@@ -552,9 +591,14 @@ function openEditModal(id) {
   document.getElementById('formObjName').value = d.objName;
   document.getElementById('formObjName').readOnly = true;
   document.getElementById('formObjName').classList.add('bg-gray-50', 'cursor-not-allowed');
+  document.querySelector(`input[name="locationMethod"][value="${d.locationMethod}"]`).checked = true;
+  onLocationMethodChange();
   const dimRadio = document.querySelector(`input[name="dimension"][value="${d.dimension}"]`);
   if (dimRadio) dimRadio.checked = true;
-  document.querySelector(`input[name="locationMethod"][value="${d.locationMethod}"]`).checked = true;
+  onDimensionChange();
+  if (d.dimension === '距离' && d.distance) {
+    document.getElementById('formDistance').value = d.distance;
+  }
   if (d.objType !== '商户') {
     (d.merchantType || []).forEach(v => { const cb = document.querySelector(`input[name="merchantType"][value="${v}"]`); if (cb) cb.checked = true; });
   }
@@ -576,6 +620,9 @@ function clearForm() {
   document.getElementById('whitelistLabel').textContent = '关闭';
   document.getElementById('merchantTypeSection').classList.add('hidden');
   document.getElementById('whitelistSection').classList.add('hidden');
+  document.getElementById('dimensionDistanceLabel').classList.remove('hidden');
+  document.getElementById('distanceInputWrap').classList.add('hidden');
+  document.getElementById('formDistance').value = '';
 }
 
 function closeFormModal() {
@@ -599,6 +646,8 @@ function submitForm() {
   if (!objName) { showToast('请输入对象名称', 'error'); return; }
   if (!dimEl) { showToast('请选择比对维度', 'error'); return; }
   if (!locEl) { showToast('请选择转换方式', 'error'); return; }
+  const distance = parseInt(document.getElementById('formDistance').value);
+  if (dimEl.value === '距离' && (isNaN(distance) || distance < 1)) { showToast('请输入有效距离（米）', 'error'); return; }
 
   const merchantTypeChecked = document.querySelectorAll('input[name="merchantType"]:checked');
   const merchantTypes = Array.from(merchantTypeChecked).map(el => el.value);
@@ -607,6 +656,7 @@ function submitForm() {
   const obj = {
     objType, objNo, objName,
     dimension: dimEl.value,
+    distance: dimEl.value === '距离' ? distance : null,
     locationMethod: locEl.value,
     merchantType: objType === '商户' ? [] : merchantTypes,
     whitelist: whitelist,
@@ -741,12 +791,19 @@ function doImport() {
     const no = `${prefix}${String(100000 + newId).slice(1)}`;
     dataList.push({
       id: newId, objType, objNo: no, objName: `${objType}${no}号`,
-      dimension: ['省', '市'][Math.floor(Math.random() * 2)],
+      dimension: ['省', '市', '距离'][Math.floor(Math.random() * 3)],
+      distance: null,
       locationMethod: Math.random() > 0.5 ? '经纬度' : 'IP',
       merchantType: objType === '商户' ? [] : ['企业', '个体'].slice(0, Math.floor(Math.random() * 3)),
       status: '生效', whitelist: Math.random() > 0.7,
       operator: '当前用户', updateTime: now()
     });
+    // 距离维度需要经纬度且有distance值
+    const lastItem = dataList[dataList.length - 1];
+    if (lastItem.dimension === '距离') {
+      lastItem.locationMethod = '经纬度';
+      lastItem.distance = (Math.floor(Math.random() * 10) + 1) * 1000;
+    }
   }
 
   closeImportModal();
