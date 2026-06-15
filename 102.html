@@ -105,36 +105,25 @@ th, td { border: 1px solid #f0f0f0; }
             <input id="filterObjNo" type="text" placeholder="请输入对象号" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[140px]">
           </div>
           <div class="flex flex-col gap-1">
-            <label class="text-xs text-textSecondary">围栏状态</label>
-            <select id="filterStatus" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[100px]">
-              <option value="">全部</option>
-              <option value="生效">生效</option>
-              <option value="停用">停用</option>
-            </select>
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-xs text-textSecondary">比对维度</label>
-            <select id="filterDimension" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[100px]">
-              <option value="">全部</option>
-              <option value="省">省</option>
-              <option value="市">市</option>
-              <option value="区">区</option>
-            </select>
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-xs text-textSecondary">转换方式</label>
-            <select id="filterLocation" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[100px]">
-              <option value="">全部</option>
-              <option value="经纬度">经纬度</option>
-              <option value="IP">IP</option>
-            </select>
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-xs text-textSecondary">白名单</label>
-            <select id="filterWhitelist" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[100px]">
-              <option value="">全部</option>
-              <option value="是">是</option>
-              <option value="否">否</option>
+            <label class="text-xs text-textSecondary">筛选条件</label>
+            <select id="filterCondition" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[140px]">
+              <option value="">不限</option>
+              <optgroup label="围栏状态">
+                <option value="状态-生效">生效</option>
+                <option value="状态-停用">停用</option>
+              </optgroup>
+              <optgroup label="比对维度">
+                <option value="维度-省">省</option>
+                <option value="维度-市">市</option>
+              </optgroup>
+              <optgroup label="转换方式">
+                <option value="转换-经纬度">经纬度</option>
+                <option value="转换-IP">IP</option>
+              </optgroup>
+              <optgroup label="白名单">
+                <option value="白名单-是">是</option>
+                <option value="白名单-否">否</option>
+              </optgroup>
             </select>
           </div>
           <button onclick="filterList()" class="bg-primary text-white px-4 py-1.5 rounded text-sm hover:bg-primaryHover transition-colors">查询</button>
@@ -216,7 +205,7 @@ th, td { border: 1px solid #f0f0f0; }
         <!-- 对象名称 -->
         <div class="flex flex-col gap-1.5">
           <label class="text-sm text-textPrimary">对象名称 <span class="text-danger">*</span></label>
-          <input id="formObjName" type="text" placeholder="请输入对象名称" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary">
+          <input id="formObjName" type="text" placeholder="请输入对象名称" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed">
         </div>
         <!-- 比对维度 -->
         <div class="flex flex-col gap-1.5">
@@ -224,9 +213,8 @@ th, td { border: 1px solid #f0f0f0; }
           <div class="flex gap-6">
             <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="radio" name="dimension" value="省" class="accent-primary"> 省</label>
             <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="radio" name="dimension" value="市" class="accent-primary"> 市</label>
-            <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="radio" name="dimension" value="区" class="accent-primary"> 区</label>
           </div>
-          <p class="text-xs text-textSecondary">比对商户注册地址与交易地址的精度层级：省=同省放行，市=同市放行，区=同区放行</p>
+          <p class="text-xs text-textSecondary">比对商户注册地址与交易地址的精度层级：省=同省放行，市=同市放行</p>
         </div>
         <!-- 转换方式 -->
         <div class="flex flex-col gap-1.5">
@@ -249,7 +237,7 @@ th, td { border: 1px solid #f0f0f0; }
           </div>
           <p class="text-xs text-textSecondary">不选则全部类型生效</p>
         </div>
-        <!-- 白名单标记 (商户) -->
+        <!-- 白名单标记 (商户/代理/渠道均可) -->
         <div id="whitelistSection" class="flex flex-col gap-1.5 hidden">
           <label class="text-sm text-textPrimary">白名单标记</label>
           <div class="flex items-center gap-3">
@@ -259,7 +247,7 @@ th, td { border: 1px solid #f0f0f0; }
             </label>
             <span id="whitelistLabel" class="text-sm text-textSecondary">关闭</span>
           </div>
-          <p class="text-xs text-textSecondary">开启后该商户全局豁免，不受任何层级围栏规则拦截</p>
+          <p class="text-xs text-textSecondary">开启后全局豁免，不受任何层级围栏规则拦截</p>
         </div>
       </div>
     </div>
@@ -279,22 +267,13 @@ th, td { border: 1px solid #f0f0f0; }
     </div>
     <div class="form-scroll px-6 py-5 flex-1">
       <div class="space-y-5">
-        <!-- 对象类型 -->
-        <div class="flex flex-col gap-1.5">
-          <label class="text-sm text-textPrimary">导入维度 <span class="text-danger">*</span></label>
-          <select id="importObjType" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary">
-            <option value="">请选择</option>
-            <option value="商户">商户</option>
-            <option value="代理">代理</option>
-            <option value="渠道">渠道</option>
-          </select>
-        </div>
         <!-- Template Download -->
         <div class="flex items-center gap-3">
           <button onclick="downloadTemplate()" class="text-primary hover:text-primaryHover text-sm flex items-center gap-1 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             下载导入模板
           </button>
+          <span class="text-xs text-textSecondary">对象类型维度已包含在模板中</span>
         </div>
         <!-- Upload Zone -->
         <div id="uploadZone" class="upload-zone" onclick="document.getElementById('fileInput').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="event.preventDefault();this.classList.remove('dragover');handleFileDrop(event)">
@@ -341,7 +320,7 @@ th, td { border: 1px solid #f0f0f0; }
     </div>
     <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
       <button onclick="cancelConfirm()" class="border border-gray-300 text-textSecondary px-4 py-1.5 rounded text-sm hover:border-primary hover:text-primary transition-colors">取消</button>
-      <button id="confirmBtn" onclick="doConfirm()" class="bg-danger text-white px-4 py-1.5 rounded text-sm hover:bg-dangerHover transition-colors">确认删除</button>
+      <button id="confirmBtn" onclick="doConfirm()" class="bg-primary text-white px-4 py-1.5 rounded text-sm hover:bg-primaryHover transition-colors">确认</button>
     </div>
   </div>
 </div>
@@ -352,14 +331,14 @@ const now = () => new Date().toLocaleString('zh-CN', { year:'numeric', month:'2-
 
 let dataList = [
   { id: 1, objType: '商户', objNo: 'M100001', objName: '深圳南山区便利店', dimension: '市', locationMethod: '经纬度', merchantType: [], status: '生效', whitelist: true, operator: '张三', updateTime: '2026-06-01 10:30:00' },
-  { id: 2, objType: '商户', objNo: 'M100002', objName: '广州天河区数码店', dimension: '区', locationMethod: 'IP', merchantType: [], status: '生效', whitelist: false, operator: '李四', updateTime: '2026-06-02 14:20:00' },
-  { id: 3, objType: '代理', objNo: 'A200001', objName: '华南区域代理', dimension: '省', locationMethod: '经纬度', merchantType: ['企业', '小微'], status: '生效', whitelist: false, operator: '王五', updateTime: '2026-06-03 09:15:00' },
+  { id: 2, objType: '商户', objNo: 'M100002', objName: '广州天河区数码店', dimension: '省', locationMethod: 'IP', merchantType: [], status: '生效', whitelist: false, operator: '李四', updateTime: '2026-06-02 14:20:00' },
+  { id: 3, objType: '代理', objNo: 'A200001', objName: '华南区域代理', dimension: '省', locationMethod: '经纬度', merchantType: ['企业', '小微'], status: '生效', whitelist: true, operator: '王五', updateTime: '2026-06-03 09:15:00' },
   { id: 4, objType: '代理', objNo: 'A200002', objName: '华东区域代理', dimension: '市', locationMethod: 'IP', merchantType: ['个体', '事业单位'], status: '停用', whitelist: false, operator: '赵六', updateTime: '2026-06-04 16:45:00' },
   { id: 5, objType: '渠道', objNo: 'C300001', objName: '微信支付渠道', dimension: '省', locationMethod: 'IP', merchantType: ['企业', '个体', '小微'], status: '生效', whitelist: false, operator: '张三', updateTime: '2026-06-05 11:00:00' },
-  { id: 6, objType: '渠道', objNo: 'C300002', objName: '支付宝渠道', dimension: '市', locationMethod: '经纬度', merchantType: ['企业', '个体', '小微', '事业单位', '其他组织'], status: '生效', whitelist: false, operator: '李四', updateTime: '2026-06-06 13:30:00' },
+  { id: 6, objType: '渠道', objNo: 'C300002', objName: '支付宝渠道', dimension: '市', locationMethod: '经纬度', merchantType: ['企业', '个体', '小微', '事业单位', '其他组织'], status: '生效', whitelist: true, operator: '李四', updateTime: '2026-06-06 13:30:00' },
   { id: 7, objType: '商户', objNo: 'M100003', objName: '北京朝阳区餐饮店', dimension: '省', locationMethod: '经纬度', merchantType: [], status: '生效', whitelist: false, operator: '王五', updateTime: '2026-06-07 15:00:00' },
-  { id: 8, objType: '商户', objNo: 'M100004', objName: '上海浦东新区药房', dimension: '区', locationMethod: 'IP', merchantType: [], status: '停用', whitelist: true, operator: '赵六', updateTime: '2026-06-08 09:20:00' },
-  { id: 9, objType: '代理', objNo: 'A200003', objName: '西南区域代理', dimension: '区', locationMethod: '经纬度', merchantType: ['小微', '其他组织'], status: '生效', whitelist: false, operator: '张三', updateTime: '2026-06-09 10:10:00' },
+  { id: 8, objType: '商户', objNo: 'M100004', objName: '上海浦东新区药房', dimension: '市', locationMethod: 'IP', merchantType: [], status: '停用', whitelist: true, operator: '赵六', updateTime: '2026-06-08 09:20:00' },
+  { id: 9, objType: '代理', objNo: 'A200003', objName: '西南区域代理', dimension: '市', locationMethod: '经纬度', merchantType: ['小微', '其他组织'], status: '生效', whitelist: false, operator: '张三', updateTime: '2026-06-09 10:10:00' },
   { id: 10, objType: '渠道', objNo: 'C300003', objName: '银联渠道', dimension: '省', locationMethod: 'IP', merchantType: ['企业'], status: '停用', whitelist: false, operator: '李四', updateTime: '2026-06-10 14:00:00' },
   { id: 11, objType: '商户', objNo: 'M100005', objName: '杭州西湖区水果店', dimension: '市', locationMethod: '经纬度', merchantType: [], status: '生效', whitelist: false, operator: '王五', updateTime: '2026-06-10 16:30:00' },
   { id: 12, objType: '代理', objNo: 'A200004', objName: '华北区域代理', dimension: '市', locationMethod: 'IP', merchantType: ['个体', '小微', '事业单位'], status: '生效', whitelist: false, operator: '赵六', updateTime: '2026-06-11 08:45:00' },
@@ -387,18 +366,20 @@ function showToast(msg, type = 'success') {
 function getFilteredData() {
   const objType = document.getElementById('filterObjType').value;
   const objNo = document.getElementById('filterObjNo').value.trim().toLowerCase();
-  const status = document.getElementById('filterStatus').value;
-  const dimension = document.getElementById('filterDimension').value;
-  const location = document.getElementById('filterLocation').value;
-  const whitelist = document.getElementById('filterWhitelist').value;
+  const condition = document.getElementById('filterCondition').value;
   return dataList.filter(d => {
     if (objType && d.objType !== objType) return false;
     if (objNo && !d.objNo.toLowerCase().includes(objNo)) return false;
-    if (status && d.status !== status) return false;
-    if (dimension && d.dimension !== dimension) return false;
-    if (location && d.locationMethod !== location) return false;
-    if (whitelist === '是' && !d.whitelist) return false;
-    if (whitelist === '否' && d.whitelist) return false;
+    if (condition) {
+      if (condition === '状态-生效' && d.status !== '生效') return false;
+      if (condition === '状态-停用' && d.status !== '停用') return false;
+      if (condition === '维度-省' && d.dimension !== '省') return false;
+      if (condition === '维度-市' && d.dimension !== '市') return false;
+      if (condition === '转换-经纬度' && d.locationMethod !== '经纬度') return false;
+      if (condition === '转换-IP' && d.locationMethod !== 'IP') return false;
+      if (condition === '白名单-是' && !d.whitelist) return false;
+      if (condition === '白名单-否' && d.whitelist) return false;
+    }
     return true;
   });
 }
@@ -421,10 +402,16 @@ function renderTable() {
     tbody.innerHTML = pageData.map(d => {
       const checked = selectedIds.has(d.id) ? 'checked' : '';
       const typeTag = { '商户': 'bg-blue-50 text-blue-600', '代理': 'bg-orange-50 text-orange-600', '渠道': 'bg-purple-50 text-purple-600' };
-      const dimTag = { '省': 'bg-cyan-50 text-cyan-600', '市': 'bg-teal-50 text-teal-600', '区': 'bg-indigo-50 text-indigo-600' };
+      const dimTag = { '省': 'bg-cyan-50 text-cyan-600', '市': 'bg-teal-50 text-teal-600' };
       const locTag = { '经纬度': 'bg-blue-50 text-blue-600', 'IP': 'bg-violet-50 text-violet-600' };
       const merchantTypeDisplay = d.objType === '商户' ? '—' : (d.merchantType.length ? d.merchantType.join('、') : '全部');
-      const whitelistDisplay = d.objType === '商户' ? (d.whitelist ? '<span class="inline-block px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-600">是</span>' : '<span class="text-textSecondary">否</span>') : '—';
+      const whitelistDisplay = d.whitelist
+        ? '<span class="inline-block px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-600">是</span>'
+        : '<span class="text-textSecondary">否</span>';
+      const statusBtnClass = d.status === '生效'
+        ? 'bg-green-50 text-green-600 hover:bg-green-100 border border-green-200'
+        : 'bg-gray-100 text-gray-500 hover:bg-gray-200 border border-gray-200';
+      const statusBtnLabel = d.status === '生效' ? '停用' : '生效';
       return `
       <tr class="hover:bg-gray-50 transition-colors">
         <td class="px-3 py-3 text-center"><input type="checkbox" class="row-check accent-primary" data-id="${d.id}" ${checked} onchange="toggleCheck(${d.id}, this)"></td>
@@ -435,7 +422,7 @@ function renderTable() {
         <td class="px-3 py-3"><span class="inline-block px-2 py-0.5 rounded text-xs font-medium ${locTag[d.locationMethod]}">${d.locationMethod}</span></td>
         <td class="px-3 py-3 text-textSecondary text-xs">${merchantTypeDisplay}</td>
         <td class="px-3 py-3">
-          <span class="inline-block px-2 py-0.5 rounded text-xs font-medium cursor-pointer ${d.status === '生效' ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'}" onclick="toggleStatus(${d.id})" title="点击切换状态">${d.status}</span>
+          <span class="inline-block px-2 py-0.5 rounded text-xs font-medium ${d.status === '生效' ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'}">${d.status}</span>
         </td>
         <td class="px-3 py-3">${whitelistDisplay}</td>
         <td class="px-3 py-3 text-textSecondary text-xs">${d.updateTime}</td>
@@ -443,7 +430,7 @@ function renderTable() {
         <td class="px-3 py-3">
           <div class="flex items-center gap-2">
             <button onclick="openEditModal(${d.id})" class="text-primary hover:text-primaryHover text-xs transition-colors">修改</button>
-            <button onclick="confirmDelete(${d.id})" class="text-danger hover:text-dangerHover text-xs transition-colors">删除</button>
+            <button onclick="confirmToggleStatus(${d.id})" class="inline-block px-2 py-0.5 rounded text-xs font-medium cursor-pointer transition-colors ${statusBtnClass}">${statusBtnLabel}</button>
           </div>
         </td>
       </tr>`;
@@ -478,7 +465,7 @@ function goPage(p) {
 // ========== Checkbox ==========
 function toggleCheck(id, el) {
   if (el.checked) selectedIds.add(id); else selectedIds.delete(id);
-  updateBatchBtn();
+  renderTable();
 }
 
 function toggleCheckAll(el) {
@@ -523,10 +510,7 @@ function filterList() {
 function resetFilter() {
   document.getElementById('filterObjType').value = '';
   document.getElementById('filterObjNo').value = '';
-  document.getElementById('filterStatus').value = '';
-  document.getElementById('filterDimension').value = '';
-  document.getElementById('filterLocation').value = '';
-  document.getElementById('filterWhitelist').value = '';
+  document.getElementById('filterCondition').value = '';
   currentPage = 1;
   selectedIds.clear();
   renderTable();
@@ -542,7 +526,7 @@ function onObjTypeChange() {
     wlSection.classList.remove('hidden');
   } else if (t === '代理' || t === '渠道') {
     mtSection.classList.remove('hidden');
-    wlSection.classList.add('hidden');
+    wlSection.classList.remove('hidden');
   } else {
     mtSection.classList.add('hidden');
     wlSection.classList.add('hidden');
@@ -566,7 +550,10 @@ function openEditModal(id) {
   onObjTypeChange();
   document.getElementById('formObjNo').value = d.objNo;
   document.getElementById('formObjName').value = d.objName;
-  document.querySelector(`input[name="dimension"][value="${d.dimension}"]`).checked = true;
+  document.getElementById('formObjName').readOnly = true;
+  document.getElementById('formObjName').classList.add('bg-gray-50', 'cursor-not-allowed');
+  const dimRadio = document.querySelector(`input[name="dimension"][value="${d.dimension}"]`);
+  if (dimRadio) dimRadio.checked = true;
   document.querySelector(`input[name="locationMethod"][value="${d.locationMethod}"]`).checked = true;
   if (d.objType !== '商户') {
     (d.merchantType || []).forEach(v => { const cb = document.querySelector(`input[name="merchantType"][value="${v}"]`); if (cb) cb.checked = true; });
@@ -580,6 +567,8 @@ function clearForm() {
   document.getElementById('formObjType').value = '';
   document.getElementById('formObjNo').value = '';
   document.getElementById('formObjName').value = '';
+  document.getElementById('formObjName').readOnly = false;
+  document.getElementById('formObjName').classList.remove('bg-gray-50', 'cursor-not-allowed');
   document.querySelectorAll('input[name="dimension"]').forEach(r => r.checked = false);
   document.querySelectorAll('input[name="locationMethod"]').forEach(r => r.checked = false);
   document.querySelectorAll('input[name="merchantType"]').forEach(r => r.checked = false);
@@ -620,7 +609,7 @@ function submitForm() {
     dimension: dimEl.value,
     locationMethod: locEl.value,
     merchantType: objType === '商户' ? [] : merchantTypes,
-    whitelist: objType === '商户' ? whitelist : false,
+    whitelist: whitelist,
   };
 
   if (editingId !== null) {
@@ -637,30 +626,29 @@ function submitForm() {
   renderTable();
 }
 
-// ========== Toggle Status ==========
-function toggleStatus(id) {
+// ========== Toggle Status (with confirm) ==========
+function confirmToggleStatus(id) {
   const d = dataList.find(x => x.id === id);
   if (!d) return;
-  d.status = d.status === '生效' ? '停用' : '生效';
-  d.operator = '当前用户';
-  d.updateTime = now();
-  renderTable();
-  showToast('已切换为' + d.status);
-}
-
-// ========== Delete ==========
-function confirmDelete(id) {
-  const d = dataList.find(x => x.id === id);
-  showConfirm(`确认删除【${d.objName}】的围栏配置吗？删除后不可恢复。`, () => {
-    dataList = dataList.filter(x => x.id !== id);
-    selectedIds.delete(id);
+  const target = d.status === '生效' ? '停用' : '生效';
+  const btnLabel = document.getElementById('confirmBtn');
+  btnLabel.textContent = '确认';
+  btnLabel.className = 'bg-primary text-white px-4 py-1.5 rounded text-sm hover:bg-primaryHover transition-colors';
+  showConfirm(`确认将【${d.objName}】的围栏状态切换为"${target}"吗？`, () => {
+    d.status = target;
+    d.operator = '当前用户';
+    d.updateTime = now();
     renderTable();
-    showToast('删除成功');
+    showToast('已切换为' + target);
   });
 }
 
+// ========== Batch Delete ==========
 function batchDelete() {
   if (selectedIds.size === 0) return;
+  const btnLabel = document.getElementById('confirmBtn');
+  btnLabel.textContent = '确认删除';
+  btnLabel.className = 'bg-danger text-white px-4 py-1.5 rounded text-sm hover:bg-dangerHover transition-colors';
   showConfirm(`确认删除选中的 ${selectedIds.size} 条围栏配置吗？删除后不可恢复。`, () => {
     dataList = dataList.filter(x => !selectedIds.has(x.id));
     selectedIds.clear();
@@ -698,7 +686,6 @@ function closeImportModal() {
 }
 
 function clearImportForm() {
-  document.getElementById('importObjType').value = '';
   document.getElementById('fileInput').value = '';
   document.getElementById('fileName').classList.add('hidden');
   document.getElementById('fileNameText').textContent = '';
@@ -729,9 +716,7 @@ function clearFile() {
 }
 
 function doImport() {
-  const objType = document.getElementById('importObjType').value;
   const hasFile = document.getElementById('fileNameText').textContent;
-  if (!objType) { showToast('请选择导入维度', 'error'); return; }
   if (!hasFile) { showToast('请上传 Excel 文件', 'error'); return; }
 
   // Simulate import result
@@ -746,18 +731,20 @@ function doImport() {
     failRows.push({ row, reason: reasons[Math.floor(Math.random() * reasons.length)] });
   }
 
-  // Add mock data for successful rows
+  // Add mock data for successful rows (dimension from template)
+  const objTypes = ['商户', '代理', '渠道'];
   const prefixes = { '商户': 'M', '代理': 'A', '渠道': 'C' };
   for (let i = 0; i < Math.min(successCount, 5); i++) {
     const newId = idSeq++;
+    const objType = objTypes[Math.floor(Math.random() * 3)];
     const prefix = prefixes[objType];
     const no = `${prefix}${String(100000 + newId).slice(1)}`;
     dataList.push({
       id: newId, objType, objNo: no, objName: `${objType}${no}号`,
-      dimension: ['省', '市', '区'][Math.floor(Math.random() * 3)],
+      dimension: ['省', '市'][Math.floor(Math.random() * 2)],
       locationMethod: Math.random() > 0.5 ? '经纬度' : 'IP',
       merchantType: objType === '商户' ? [] : ['企业', '个体'].slice(0, Math.floor(Math.random() * 3)),
-      status: '生效', whitelist: objType === '商户' && Math.random() > 0.7,
+      status: '生效', whitelist: Math.random() > 0.7,
       operator: '当前用户', updateTime: now()
     });
   }
