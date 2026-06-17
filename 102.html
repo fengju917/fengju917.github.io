@@ -183,6 +183,15 @@ th, td { border: 1px solid #f0f0f0; }
     </div>
     <div class="form-scroll px-6 py-5 flex-1">
       <div class="space-y-5">
+        <!-- 配置类型 (仅新增时显示) -->
+        <div id="configTypeSection" class="flex flex-col gap-1.5">
+          <label class="text-sm text-textPrimary">配置类型 <span class="text-danger">*</span></label>
+          <div class="flex gap-6">
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="radio" name="configType" value="围栏" class="accent-primary" onchange="onConfigTypeChange()" checked> 围栏配置</label>
+            <label class="flex items-center gap-1.5 text-sm cursor-pointer"><input type="radio" name="configType" value="白名单" class="accent-primary" onchange="onConfigTypeChange()"> 白名单</label>
+          </div>
+          <p id="whitelistHint" class="text-xs text-green-600 hidden">选择白名单后该对象全局豁免，不受任何围栏规则拦截，无需配置其他参数</p>
+        </div>
         <!-- 对象类型 -->
         <div class="flex flex-col gap-1.5">
           <label class="text-sm text-textPrimary">对象类型 <span class="text-danger">*</span></label>
@@ -203,6 +212,8 @@ th, td { border: 1px solid #f0f0f0; }
           <label class="text-sm text-textPrimary">对象名称 <span class="text-danger">*</span></label>
           <input id="formObjName" type="text" placeholder="请输入对象名称" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed">
         </div>
+        <!-- 围栏配置字段区 (选白名单时整体隐藏) -->
+        <div id="fenceFields">
         <!-- 比对维度 -->
         <div class="flex flex-col gap-1.5">
           <label class="text-sm text-textPrimary">比对维度 <span class="text-danger">*</span></label>
@@ -238,18 +249,7 @@ th, td { border: 1px solid #f0f0f0; }
           </div>
           <p class="text-xs text-textSecondary">不选则全部类型生效</p>
         </div>
-        <!-- 白名单标记 (商户/代理/渠道均可) -->
-        <div id="whitelistSection" class="flex flex-col gap-1.5 hidden">
-          <label class="text-sm text-textPrimary">白名单标记</label>
-          <div class="flex items-center gap-3">
-            <label class="switch">
-              <input id="formWhitelist" type="checkbox">
-              <span class="slider"></span>
-            </label>
-            <span id="whitelistLabel" class="text-sm text-textSecondary">关闭</span>
-          </div>
-          <p class="text-xs text-textSecondary">开启后全局豁免，不受任何层级围栏规则拦截</p>
-        </div>
+        </div><!-- /fenceFields -->
       </div>
     </div>
     <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2 flex-shrink-0">
@@ -331,14 +331,14 @@ th, td { border: 1px solid #f0f0f0; }
 const now = () => new Date().toLocaleString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' }).replace(/\//g, '-');
 
 let dataList = [
-  { id: 1, objType: '商户', objNo: 'M100001', objName: '深圳南山区便利店', dimension: '市', distance: null, locationMethod: '经纬度', merchantType: [], status: '生效', whitelist: true, operator: '张三', updateTime: '2026-06-01 10:30:00' },
+  { id: 1, objType: '商户', objNo: 'M100001', objName: '深圳南山区便利店', dimension: null, distance: null, locationMethod: null, merchantType: [], status: '生效', whitelist: true, operator: '张三', updateTime: '2026-06-01 10:30:00' },
   { id: 2, objType: '商户', objNo: 'M100002', objName: '广州天河区数码店', dimension: '省', distance: null, locationMethod: 'IP', merchantType: [], status: '生效', whitelist: false, operator: '李四', updateTime: '2026-06-02 14:20:00' },
-  { id: 3, objType: '代理', objNo: 'A200001', objName: '华南区域代理', dimension: '省', distance: null, locationMethod: '经纬度', merchantType: ['企业', '小微'], status: '生效', whitelist: true, operator: '王五', updateTime: '2026-06-03 09:15:00' },
+  { id: 3, objType: '代理', objNo: 'A200001', objName: '华南区域代理', dimension: null, distance: null, locationMethod: null, merchantType: [], status: '生效', whitelist: true, operator: '王五', updateTime: '2026-06-03 09:15:00' },
   { id: 4, objType: '代理', objNo: 'A200002', objName: '华东区域代理', dimension: '距离', distance: 5000, locationMethod: '经纬度', merchantType: ['个体', '事业单位'], status: '停用', whitelist: false, operator: '赵六', updateTime: '2026-06-04 16:45:00' },
   { id: 5, objType: '渠道', objNo: 'C300001', objName: '微信支付渠道', dimension: '省', distance: null, locationMethod: 'IP', merchantType: ['企业', '个体', '小微'], status: '生效', whitelist: false, operator: '张三', updateTime: '2026-06-05 11:00:00' },
-  { id: 6, objType: '渠道', objNo: 'C300002', objName: '支付宝渠道', dimension: '距离', distance: 3000, locationMethod: '经纬度', merchantType: ['企业', '个体', '小微', '事业单位', '其他组织'], status: '生效', whitelist: true, operator: '李四', updateTime: '2026-06-06 13:30:00' },
+  { id: 6, objType: '渠道', objNo: 'C300002', objName: '支付宝渠道', dimension: null, distance: null, locationMethod: null, merchantType: [], status: '生效', whitelist: true, operator: '李四', updateTime: '2026-06-06 13:30:00' },
   { id: 7, objType: '商户', objNo: 'M100003', objName: '北京朝阳区餐饮店', dimension: '省', distance: null, locationMethod: '经纬度', merchantType: [], status: '生效', whitelist: false, operator: '王五', updateTime: '2026-06-07 15:00:00' },
-  { id: 8, objType: '商户', objNo: 'M100004', objName: '上海浦东新区药房', dimension: '市', distance: null, locationMethod: 'IP', merchantType: [], status: '停用', whitelist: true, operator: '赵六', updateTime: '2026-06-08 09:20:00' },
+  { id: 8, objType: '商户', objNo: 'M100004', objName: '上海浦东新区药房', dimension: null, distance: null, locationMethod: null, merchantType: [], status: '停用', whitelist: true, operator: '赵六', updateTime: '2026-06-08 09:20:00' },
   { id: 9, objType: '代理', objNo: 'A200003', objName: '西南区域代理', dimension: '市', distance: null, locationMethod: '经纬度', merchantType: ['小微', '其他组织'], status: '生效', whitelist: false, operator: '张三', updateTime: '2026-06-09 10:10:00' },
   { id: 10, objType: '渠道', objNo: 'C300003', objName: '银联渠道', dimension: '省', distance: null, locationMethod: 'IP', merchantType: ['企业'], status: '停用', whitelist: false, operator: '李四', updateTime: '2026-06-10 14:00:00' },
   { id: 11, objType: '商户', objNo: 'M100005', objName: '杭州西湖区水果店', dimension: '距离', distance: 10000, locationMethod: '经纬度', merchantType: [], status: '生效', whitelist: false, operator: '王五', updateTime: '2026-06-10 16:30:00' },
@@ -375,6 +375,7 @@ function getFilteredData() {
     if (status && d.status !== status) return false;
     if (condition) {
       if (condition === '白名单' && !d.whitelist) return false;
+      if (condition !== '白名单' && d.whitelist) return false;
       if (condition === '经纬度+距离' && !(d.locationMethod === '经纬度' && d.dimension === '距离')) return false;
       if (condition === '经纬度+省' && !(d.locationMethod === '经纬度' && d.dimension === '省')) return false;
       if (condition === '经纬度+市' && !(d.locationMethod === '经纬度' && d.dimension === '市')) return false;
@@ -403,12 +404,10 @@ function renderTable() {
     tbody.innerHTML = pageData.map(d => {
       const checked = selectedIds.has(d.id) ? 'checked' : '';
       const typeTag = { '商户': 'bg-blue-50 text-blue-600', '代理': 'bg-orange-50 text-orange-600', '渠道': 'bg-purple-50 text-purple-600' };
-      const merchantTypeDisplay = d.objType === '商户' ? '—' : (d.merchantType.length ? d.merchantType.join('、') : '全部');
+      const merchantTypeDisplay = d.whitelist ? '—' : (d.objType === '商户' ? '—' : (d.merchantType.length ? d.merchantType.join('、') : '全部'));
       // 组合筛选条件显示
       const dimDisplay = d.dimension === '距离' ? `距离(${d.distance}米)` : d.dimension;
-      const condParts = [d.locationMethod, dimDisplay];
-      if (d.whitelist) condParts.push('白名单');
-      const conditionDisplay = condParts.join(' + ');
+      const conditionDisplay = d.whitelist ? '白名单' : `${d.locationMethod} + ${dimDisplay}`;
       const conditionTag = d.whitelist ? 'bg-green-50 text-green-600' : (d.locationMethod === '经纬度' ? 'bg-blue-50 text-blue-600' : 'bg-violet-50 text-violet-600');
       const statusBtnClass = d.status === '生效'
         ? 'bg-green-50 text-green-600 hover:bg-green-100 border border-green-200'
@@ -552,23 +551,38 @@ function onDimensionChange() {
 function onObjTypeChange() {
   const t = document.getElementById('formObjType').value;
   const mtSection = document.getElementById('merchantTypeSection');
-  const wlSection = document.getElementById('whitelistSection');
   if (t === '商户') {
     mtSection.classList.add('hidden');
-    wlSection.classList.remove('hidden');
   } else if (t === '代理' || t === '渠道') {
     mtSection.classList.remove('hidden');
-    wlSection.classList.remove('hidden');
   } else {
     mtSection.classList.add('hidden');
-    wlSection.classList.add('hidden');
+  }
+}
+
+// 配置类型联动：选"白名单"时隐藏全部围栏配置字段
+function onConfigTypeChange() {
+  const ctEl = document.querySelector('input[name="configType"]:checked');
+  const fenceFields = document.getElementById('fenceFields');
+  const hint = document.getElementById('whitelistHint');
+  if (!ctEl) return;
+  if (ctEl.value === '白名单') {
+    fenceFields.classList.add('hidden');
+    hint.classList.remove('hidden');
+  } else {
+    fenceFields.classList.remove('hidden');
+    hint.classList.add('hidden');
   }
 }
 
 function openAddModal() {
   editingId = null;
-  document.getElementById('formModalTitle').textContent = '新增围栏配置';
+  document.getElementById('formModalTitle').textContent = '新增配置';
   clearForm();
+  // 新增时显示配置类型选择
+  document.getElementById('configTypeSection').classList.remove('hidden');
+  document.querySelector('input[name="configType"][value="围栏"]').checked = true;
+  onConfigTypeChange();
   document.getElementById('formModal').classList.remove('hidden');
 }
 
@@ -576,27 +590,31 @@ function openEditModal(id) {
   const d = dataList.find(x => x.id === id);
   if (!d) return;
   editingId = id;
-  document.getElementById('formModalTitle').textContent = '修改围栏配置';
+  document.getElementById('formModalTitle').textContent = d.whitelist ? '修改白名单' : '修改围栏配置';
   clearForm();
+  // 修改时隐藏配置类型选择，不允许围栏和白名单互转
+  document.getElementById('configTypeSection').classList.add('hidden');
+  document.querySelector(`input[name="configType"][value="${d.whitelist ? '白名单' : '围栏'}"]`).checked = true;
+  onConfigTypeChange();
   document.getElementById('formObjType').value = d.objType;
   onObjTypeChange();
   document.getElementById('formObjNo').value = d.objNo;
   document.getElementById('formObjName').value = d.objName;
   document.getElementById('formObjName').readOnly = true;
   document.getElementById('formObjName').classList.add('bg-gray-50', 'cursor-not-allowed');
-  document.querySelector(`input[name="locationMethod"][value="${d.locationMethod}"]`).checked = true;
-  onLocationMethodChange();
-  const dimRadio = document.querySelector(`input[name="dimension"][value="${d.dimension}"]`);
-  if (dimRadio) dimRadio.checked = true;
-  onDimensionChange();
-  if (d.dimension === '距离' && d.distance) {
-    document.getElementById('formDistance').value = d.distance;
+  if (!d.whitelist) {
+    document.querySelector(`input[name="locationMethod"][value="${d.locationMethod}"]`).checked = true;
+    onLocationMethodChange();
+    const dimRadio = document.querySelector(`input[name="dimension"][value="${d.dimension}"]`);
+    if (dimRadio) dimRadio.checked = true;
+    onDimensionChange();
+    if (d.dimension === '距离' && d.distance) {
+      document.getElementById('formDistance').value = d.distance;
+    }
+    if (d.objType !== '商户') {
+      (d.merchantType || []).forEach(v => { const cb = document.querySelector(`input[name="merchantType"][value="${v}"]`); if (cb) cb.checked = true; });
+    }
   }
-  if (d.objType !== '商户') {
-    (d.merchantType || []).forEach(v => { const cb = document.querySelector(`input[name="merchantType"][value="${v}"]`); if (cb) cb.checked = true; });
-  }
-  document.getElementById('formWhitelist').checked = d.whitelist;
-  document.getElementById('whitelistLabel').textContent = d.whitelist ? '开启' : '关闭';
   document.getElementById('formModal').classList.remove('hidden');
 }
 
@@ -609,34 +627,55 @@ function clearForm() {
   document.querySelectorAll('input[name="dimension"]').forEach(r => r.checked = false);
   document.querySelectorAll('input[name="locationMethod"]').forEach(r => r.checked = false);
   document.querySelectorAll('input[name="merchantType"]').forEach(r => r.checked = false);
-  document.getElementById('formWhitelist').checked = false;
-  document.getElementById('whitelistLabel').textContent = '关闭';
+  document.querySelectorAll('input[name="configType"]').forEach(r => r.checked = false);
   document.getElementById('merchantTypeSection').classList.add('hidden');
-  document.getElementById('whitelistSection').classList.add('hidden');
   document.getElementById('dimensionDistanceLabel').classList.remove('hidden');
   document.getElementById('distanceInputWrap').classList.add('hidden');
   document.getElementById('formDistance').value = '';
+  document.getElementById('fenceFields').classList.remove('hidden');
+  document.getElementById('whitelistHint').classList.add('hidden');
 }
 
 function closeFormModal() {
   document.getElementById('formModal').classList.add('hidden');
 }
 
-// Whitelist toggle label
-document.getElementById('formWhitelist').addEventListener('change', function() {
-  document.getElementById('whitelistLabel').textContent = this.checked ? '开启' : '关闭';
-});
-
 function submitForm() {
+  const ctEl = document.querySelector('input[name="configType"]:checked');
+  const configType = ctEl ? ctEl.value : '围栏';
   const objType = document.getElementById('formObjType').value;
   const objNo = document.getElementById('formObjNo').value.trim();
   const objName = document.getElementById('formObjName').value.trim();
-  const dimEl = document.querySelector('input[name="dimension"]:checked');
-  const locEl = document.querySelector('input[name="locationMethod"]:checked');
 
+  // 基础校验
   if (!objType) { showToast('请选择对象类型', 'error'); return; }
   if (!objNo) { showToast('请输入对象号', 'error'); return; }
   if (!objName) { showToast('请输入对象名称', 'error'); return; }
+
+  // 白名单：无需其他配置
+  if (configType === '白名单') {
+    const obj = { objType, objNo, objName, dimension: null, distance: null, locationMethod: null, merchantType: [], whitelist: true };
+    if (editingId !== null) {
+      const idx = dataList.findIndex(x => x.id === editingId);
+      if (idx > -1) {
+        Object.assign(dataList[idx], obj, { operator: '当前用户', updateTime: now() });
+      }
+      showToast('修改成功');
+    } else {
+      if (dataList.some(x => x.objNo === objNo)) {
+        showToast('该对象号已存在配置', 'error'); return;
+      }
+      dataList.push({ id: idSeq++, ...obj, status: '生效', operator: '当前用户', updateTime: now() });
+      showToast('新增白名单成功');
+    }
+    closeFormModal();
+    renderTable();
+    return;
+  }
+
+  // 围栏配置校验
+  const dimEl = document.querySelector('input[name="dimension"]:checked');
+  const locEl = document.querySelector('input[name="locationMethod"]:checked');
   if (!dimEl) { showToast('请选择比对维度', 'error'); return; }
   if (!locEl) { showToast('请选择转换方式', 'error'); return; }
   const distance = parseInt(document.getElementById('formDistance').value);
@@ -644,7 +683,6 @@ function submitForm() {
 
   const merchantTypeChecked = document.querySelectorAll('input[name="merchantType"]:checked');
   const merchantTypes = Array.from(merchantTypeChecked).map(el => el.value);
-  const whitelist = document.getElementById('formWhitelist').checked;
 
   const obj = {
     objType, objNo, objName,
@@ -652,7 +690,7 @@ function submitForm() {
     distance: dimEl.value === '距离' ? distance : null,
     locationMethod: locEl.value,
     merchantType: objType === '商户' ? [] : merchantTypes,
-    whitelist: whitelist,
+    whitelist: false,
   };
 
   if (editingId !== null) {
@@ -662,6 +700,9 @@ function submitForm() {
     }
     showToast('修改成功');
   } else {
+    if (dataList.some(x => x.objNo === objNo)) {
+      showToast('该对象号已存在围栏配置', 'error'); return;
+    }
     dataList.push({ id: idSeq++, ...obj, status: '生效', operator: '当前用户', updateTime: now() });
     showToast('新增成功');
   }
@@ -788,7 +829,7 @@ function doImport() {
       distance: null,
       locationMethod: Math.random() > 0.5 ? '经纬度' : 'IP',
       merchantType: objType === '商户' ? [] : ['企业', '个体'].slice(0, Math.floor(Math.random() * 3)),
-      status: '生效', whitelist: Math.random() > 0.7,
+      status: '生效', whitelist: false,
       operator: '当前用户', updateTime: now()
     });
     // 距离维度需要经纬度且有distance值
