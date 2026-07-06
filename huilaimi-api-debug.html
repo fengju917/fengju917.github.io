@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>汇来米 API 调试控制台 - 演示原型</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f0f2f5; color: #333; font-size: 13px; }
+  /* 顶栏 */
+  .topbar { height: 50px; background: #1F497D; color: #fff; display: flex; align-items: center; padding: 0 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+  .topbar .logo { font-size: 16px; font-weight: bold; }
+  .topbar .logo span { color: #6cf; }
+  .topbar .nav { margin-left: 40px; display: flex; gap: 4px; }
+  .topbar .nav a { color: #cdd9ee; padding: 8px 16px; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 13px; }
+  .topbar .nav a:hover { background: rgba(255,255,255,0.1); }
+  .topbar .nav a.active { background: rgba(255,255,255,0.2); color: #fff; }
+  .topbar .env { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .topbar .env select { background: #2a5a9e; color: #fff; border: 1px solid #3a6ab0; padding: 4px 8px; border-radius: 3px; font-size: 12px; }
+  .topbar .demo-tag { background: #e6a700; color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 12px; }
+
+  /* 页面容器 */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* 通用 */
+  .btn { padding: 6px 14px; border: 1px solid #d9d9d9; background: #fff; border-radius: 4px; cursor: pointer; font-size: 13px; color: #333; }
+  .btn:hover { border-color: #1F497D; color: #1F497D; }
+  .btn-primary { background: #1F497D; color: #fff; border-color: #1F497D; }
+  .btn-primary:hover { background: #2a5a9e; color: #fff; }
+  .btn-success { background: #52c41a; color: #fff; border-color: #52c41a; }
+  .btn-danger { color: #ff4d4f; border-color: #ffa39e; }
+  .btn-sm { padding: 3px 8px; font-size: 12px; }
+  input, select, textarea { padding: 5px 8px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 13px; outline: none; }
+  input:focus, select:focus, textarea:focus { border-color: #1F497D; }
+  .badge-required { color: #ff4d4f; margin-left: 2px; }
+
+  /* ============ 模块一:测试数据管理 ============ */
+  .layout { display: flex; height: calc(100vh - 50px); }
+  .sidebar { width: 220px; background: #fff; border-right: 1px solid #e8e8e8; padding: 12px; overflow-y: auto; }
+  .sidebar h3 { font-size: 13px; color: #999; margin-bottom: 8px; font-weight: normal; }
+  .data-item { padding: 10px 12px; border-radius: 4px; cursor: pointer; margin-bottom: 4px; border: 1px solid transparent; }
+  .data-item:hover { background: #f5f7fa; }
+  .data-item.active { background: #e8f0fb; border-color: #1F497D; }
+  .data-item .name { font-weight: bold; font-size: 13px; }
+  .data-item .sub { font-size: 11px; color: #999; margin-top: 2px; }
+
+  .main { flex: 1; padding: 16px; overflow-y: auto; }
+  .toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+  .toolbar h2 { font-size: 16px; margin-right: auto; }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; background: #fff; padding: 20px; border-radius: 6px; border: 1px solid #e8e8e8; }
+  .form-item { display: flex; flex-direction: column; gap: 4px; }
+  .form-item.full { grid-column: 1 / -1; }
+  .form-item label { font-size: 12px; color: #666; }
+  .form-item label .hint { color: #bbb; font-weight: normal; }
+
+  .section-title { font-size: 14px; font-weight: bold; margin: 24px 0 12px; padding-left: 8px; border-left: 3px solid #1F497D; }
+
+  .img-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+  .img-card { border: 1px solid #e8e8e8; border-radius: 6px; padding: 8px; background: #fafafa; position: relative; }
+  .img-card .thumb { width: 100%; height: 80px; background: #e8e8e8; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #bbb; font-size: 24px; overflow: hidden; }
+  .img-card .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .img-card .fname { font-size: 12px; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .img-card .ftype { font-size: 11px; color: #1F497D; }
+  .img-card .ftoken { font-size: 10px; color: #999; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .img-card .del { position: absolute; top: 4px; right: 4px; background: rgba(255,77,79,0.9); color: #fff; width: 18px; height: 18px; border-radius: 50%; text-align: center; line-height: 18px; cursor: pointer; font-size: 12px; }
+  .img-add { border: 1px dashed #d9d9d9; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 120px; cursor: pointer; color: #999; }
+  .img-add:hover { border-color: #1F497D; color: #1F497D; }
+
+  /* ============ 模块二:单接口调试 ============ */
+  .debug-layout { display: flex; height: calc(100vh - 50px); }
+  .api-list { width: 240px; background: #fff; border-right: 1px solid #e8e8e8; display: flex; flex-direction: column; }
+  .api-list .search { padding: 10px; border-bottom: 1px solid #e8e8e8; }
+  .api-list .search input { width: 100%; }
+  .api-cat { padding: 8px 0; }
+  .api-cat .cat-title { padding: 6px 14px; font-size: 12px; color: #999; font-weight: bold; }
+  .api-item { padding: 8px 14px 8px 20px; cursor: pointer; font-size: 13px; border-left: 2px solid transparent; }
+  .api-item:hover { background: #f5f7fa; }
+  .api-item.active { background: #e8f0fb; border-left-color: #1F497D; color: #1F497D; font-weight: bold; }
+  .api-item .method { font-size: 10px; color: #52c41a; font-weight: bold; }
+
+  .debug-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .api-header { padding: 12px 20px; background: #fff; border-bottom: 1px solid #e8e8e8; }
+  .api-header .title { font-size: 16px; font-weight: bold; }
+  .api-header .meta { font-size: 12px; color: #888; margin-top: 4px; display: flex; gap: 16px; align-items: center; }
+  .api-header .url { font-family: monospace; background: #f5f5f5; padding: 2px 6px; border-radius: 3px; }
+  .api-header .desc { color: #666; margin-top: 4px; }
+
+  .debug-body { flex: 1; display: flex; overflow: hidden; }
+  .param-panel { flex: 1; padding: 16px 20px; overflow-y: auto; background: #fff; border-right: 1px solid #e8e8e8; }
+  .result-panel { width: 45%; padding: 16px; overflow-y: auto; background: #fafafa; }
+
+  .param-section { margin-bottom: 16px; }
+  .param-section .ps-title { font-size: 13px; font-weight: bold; color: #1F497D; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #f0f0f0; }
+  .param-row { display: grid; grid-template-columns: 140px 1fr 90px; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .param-row .plabel { font-size: 12px; }
+  .param-row .plabel .cn { color: #333; }
+  .param-row .plabel .en { color: #999; font-family: monospace; font-size: 11px; }
+  .param-row .pinput input, .param-row .pinput select { width: 100%; }
+  .param-row .pdesc { font-size: 11px; color: #999; }
+  .param-row.nested { margin-left: 24px; grid-template-columns: 120px 1fr 90px; }
+  .param-row.nested .plabel::before { content: "↳ "; color: #bbb; }
+
+  .nest-group { border: 1px solid #f0f0f0; border-radius: 4px; padding: 10px; margin: 8px 0; background: #fcfcfc; }
+  .nest-group .ng-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .nest-group .ng-head .ng-title { font-size: 12px; color: #666; }
+  .nest-group .ng-item { border-top: 1px dashed #eee; padding-top: 8px; margin-top: 8px; }
+
+  .common-params { background: #fffbe6; border: 1px solid #ffe58f; border-radius: 4px; padding: 10px 12px; margin-bottom: 16px; }
+  .common-params .cp-title { font-size: 12px; color: #d48806; font-weight: bold; margin-bottom: 8px; }
+  .common-params .cp-row { display: grid; grid-template-columns: 100px 1fr 60px; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .common-params .cp-row label { font-size: 12px; }
+
+  .action-bar { padding: 12px 20px; background: #fff; border-top: 1px solid #e8e8e8; display: flex; gap: 8px; align-items: center; }
+
+  /* 结果展示 */
+  .result-block { background: #fff; border: 1px solid #e8e8e8; border-radius: 4px; margin-bottom: 12px; }
+  .result-block .rb-head { padding: 8px 12px; background: #f5f7fa; font-size: 12px; font-weight: bold; color: #666; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+  .result-block .rb-body { padding: 10px 12px; font-family: monospace; font-size: 12px; }
+  .status-ok { color: #52c41a; font-weight: bold; }
+  .status-fail { color: #ff4d4f; font-weight: bold; }
+
+  .json-tree { font-family: monospace; font-size: 12px; line-height: 1.8; }
+  .json-tree .key { color: #1F497D; }
+  .json-tree .str { color: #389e0d; }
+  .json-tree .num { color: #d46b08; }
+  .json-tree .copy { color: #1F497D; cursor: pointer; font-size: 11px; margin-left: 6px; padding: 0 4px; border: 1px solid #d9d9d9; border-radius: 2px; }
+  .json-tree .copy:hover { background: #e8f0fb; }
+  .json-tree .toggle { cursor: pointer; color: #999; user-select: none; }
+
+  /* ============ 模块三:用户故事 ============ */
+  .story-layout { display: flex; height: calc(100vh - 50px); }
+  .story-list { width: 220px; background: #fff; border-right: 1px solid #e8e8e8; padding: 12px; overflow-y: auto; }
+  .story-steps { width: 260px; background: #fff; border-right: 1px solid #e8e8e8; padding: 12px; overflow-y: auto; }
+  .step-item { padding: 10px 12px; border-radius: 4px; cursor: pointer; margin-bottom: 6px; border: 1px solid #e8e8e8; position: relative; }
+  .step-item:hover { background: #f5f7fa; }
+  .step-item.active { background: #e8f0fb; border-color: #1F497D; }
+  .step-item.done { border-left: 3px solid #52c41a; }
+  .step-item .snum { display: inline-block; width: 20px; height: 20px; background: #1F497D; color: #fff; border-radius: 50%; text-align: center; line-height: 20px; font-size: 11px; margin-right: 6px; }
+  .step-item.done .snum { background: #52c41a; }
+  .step-item .sname { font-size: 13px; }
+  .step-item .smeta { font-size: 11px; color: #999; margin-top: 2px; margin-left: 26px; }
+  .step-item .sdel { position: absolute; top: 8px; right: 8px; color: #ccc; cursor: pointer; font-size: 14px; }
+
+  .story-detail { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .story-detail .sd-head { padding: 12px 16px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; gap: 12px; }
+  .story-detail .sd-head .stitle { font-size: 15px; font-weight: bold; }
+  .story-detail .sd-body { flex: 1; display: flex; overflow: hidden; }
+  .step-param { flex: 1; padding: 14px; overflow-y: auto; background: #fff; border-right: 1px solid #e8e8e8; }
+  .step-result { width: 42%; overflow-y: auto; padding: 14px; background: #fafafa; }
+  .step-result .sr-tabs { display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap; }
+  .step-result .sr-tab { padding: 4px 10px; background: #fff; border: 1px solid #e8e8e8; border-radius: 3px; font-size: 11px; cursor: pointer; }
+  .step-result .sr-tab.active { background: #1F497D; color: #fff; border-color: #1F497D; }
+  .step-result .sr-tab.done { border-color: #52c41a; color: #52c41a; }
+
+  .empty { text-align: center; color: #ccc; padding: 60px 20px; font-size: 13px; }
+
+  .hint-box { background: #e6f7ff; border: 1px solid #91d5ff; border-radius: 4px; padding: 10px 12px; font-size: 12px; color: #096dd9; margin-bottom: 12px; line-height: 1.6; }
+  .hint-box b { color: #0050b3; }
+
+  .toast { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 8px 20px; border-radius: 4px; font-size: 13px; z-index: 9999; display: none; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">汇来米 <span>API 调试控制台</span></div>
+  <div class="nav">
+    <a id="nav-data" class="active" onclick="switchPage('data')">测试数据管理</a>
+    <a id="nav-debug" onclick="switchPage('debug')">单接口调试</a>
+    <a id="nav-story" onclick="switchPage('story')">用户故事</a>
+  </div>
+  <div class="env">
+    环境:
+    <select><option>测试环境</option><option>生产环境</option></select>
+  </div>
+  <div class="demo-tag">演示原型</div>
+</div>
+
+<!-- ============ 模块一:测试数据管理 ============ -->
+<div id="page-data" class="page active">
+  <div class="layout">
+    <div class="sidebar">
+      <h3>测试数据列表</h3>
+      <div class="data-item active" onclick="selData(this,'企业商户-测试A')">
+        <div class="name">企业商户-测试A</div>
+        <div class="sub">客户号:6666000000929806</div>
+      </div>
+      <div class="data-item" onclick="selData(this,'小微商户-测试B')">
+        <div class="name">小微商户-测试B</div>
+        <div class="sub">客户号:6666000000929812</div>
+      </div>
+      <div class="data-item" onclick="selData(this,'代理商-测试C')">
+        <div class="name">代理商-测试C</div>
+        <div class="sub">客户号:6666000000929823</div>
+      </div>
+      <button class="btn btn-primary btn-sm" style="width:100%;margin-top:12px" onclick="toast('新增测试数据(演示)')">+ 新增测试数据</button>
+    </div>
+    <div class="main">
+      <div class="toolbar">
+        <h2>企业商户-测试A</h2>
+        <button class="btn" onclick="toast('已保存(演示)')">保存</button>
+        <button class="btn btn-danger" onclick="toast('已删除(演示)')">删除</button>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-item">
+          <label>数据名称</label>
+          <input value="企业商户-测试A">
+        </div>
+        <div class="form-item">
+          <label>客户号 mer_cust_id <span class="hint">(通用参数)</span></label>
+          <input value="6666000000929806">
+        </div>
+        <div class="form-item">
+          <label>系统商号 source_num <span class="hint">(通用参数)</span></label>
+          <input value="DJS">
+        </div>
+        <div class="form-item">
+          <label>设备号 device_id <span class="hint">(交易类用)</span></label>
+          <input value="RY20240001">
+        </div>
+        <div class="form-item full">
+          <label>备注</label>
+          <input value="用于企业商户进件及支付联调测试">
+        </div>
+      </div>
+
+      <div class="section-title">图片资料(已上传,获取 fileToken)</div>
+      <div class="hint-box">图片上传后,由<b>后端代签名</b>调用 <b>file/upload</b> 接口获取真实 <b>fileToken</b>,进件接口可直接选择对应 fileToken 填入 file_tokens。</div>
+      <div class="img-grid">
+        <div class="img-card">
+          <div class="thumb" style="background:#e8f0fb;color:#1F497D;">执照</div>
+          <div class="fname">营业执照.jpg</div>
+          <div class="ftype">类型:01-营业执照</div>
+          <div class="ftoken">fileToken: 134adeff-7ade-36...</div>
+          <div class="del">×</div>
+        </div>
+        <div class="img-card">
+          <div class="thumb" style="background:#fff1f0;color:#cf1322;">身份证</div>
+          <div class="fname">法人身份证正面.jpg</div>
+          <div class="ftype">类型:05-法人身份证正面</div>
+          <div class="ftoken">fileToken: 6e8e0bca-041a-33...</div>
+          <div class="del">×</div>
+        </div>
+        <div class="img-card">
+          <div class="thumb" style="background:#f6ffed;color:#389e0d;">门头</div>
+          <div class="fname">门头照片.jpg</div>
+          <div class="ftype">类型:15-店铺门头照</div>
+          <div class="ftoken">fileToken: 53793666-2a9d-30...</div>
+          <div class="del">×</div>
+        </div>
+        <div class="img-card">
+          <div class="thumb" style="background:#fffbe6;color:#d48806;">收银台</div>
+          <div class="fname">收银台.jpg</div>
+          <div class="ftype">类型:16-收银台照片</div>
+          <div class="ftoken">fileToken: d10d4955-fca5-3e...</div>
+          <div class="del">×</div>
+        </div>
+        <div class="img-add" onclick="toast('选择图片上传(演示)')">
+          <div style="font-size:28px;">+</div>
+          <div>上传图片</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 模块二:单接口调试 ============ -->
+<div id="page-debug" class="page">
+  <div class="debug-layout">
+    <div class="api-list">
+      <div class="search"><input placeholder="搜索接口名称..." oninput="filterApi(this)"></div>
+      <div id="api-tree">
+        <div class="api-cat">
+          <div class="cat-title">商户进件</div>
+          <div class="api-item" onclick="selApi(this,'商户进件','/mcsproxy/v1/mer/upMerApplySubmit','非交易类','商户入驻/进件申请')">商户进件接口 <span class="method">POST</span></div>
+          <div class="api-item" onclick="selApi(this,'小微商户进件','/mcsproxy/v1/mer/aliHighMerApplySubmit','非交易类','小微商户入驻申请')">小微商户进件 <span class="method">POST</span></div>
+          <div class="api-item" onclick="selApi(this,'商户信息查询','/mcsproxy/v1/mer/upMerDetail','非交易类','查询商户详细信息')">商户信息查询 <span class="method">POST</span></div>
+          <div class="api-item" onclick="selApi(this,'进件结果查询','/mcsproxy/v1/mer/corpRegResult','非交易类','查询进件申请结果')">进件结果查询 <span class="method">POST</span></div>
+        </div>
+        <div class="api-cat">
+          <div class="cat-title">文件</div>
+          <div class="api-item active" onclick="selApi(this,'文件上传','/mcsproxy/v1/file/upload','非交易类','图片上传,返回fileToken')">文件上传 <span class="method">POST</span></div>
+        </div>
+        <div class="api-cat">
+          <div class="cat-title">交易</div>
+          <div class="api-item" onclick="selApi(this,'支付下单(正扫)','/mcsproxypay/v1/usersweep/','交易类','消费者扫码支付')">支付下单-正扫 <span class="method">POST</span></div>
+          <div class="api-item" onclick="selApi(this,'退款','/mcsproxypay/v1/refund/','交易类','对已支付订单退款')">退款 <span class="method">POST</span></div>
+        </div>
+        <div class="api-cat">
+          <div class="cat-title">账户</div>
+          <div class="api-item" onclick="selApi(this,'余额查询','/mcsproxy/v1/acct/balance/query','非交易类','查询账户余额')">余额查询 <span class="method">POST</span></div>
+        </div>
+        <div class="api-cat">
+          <div class="cat-title">设备</div>
+          <div class="api-item" onclick="selApi(this,'设备绑定','/mcsproxy/v1/device/bind','非交易类','门店绑定机具')">设备绑定 <span class="method">POST</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="debug-main">
+      <div class="api-header">
+        <div class="title" id="api-title">商户进件接口</div>
+        <div class="meta">
+          <span class="method" style="color:#52c41a;font-weight:bold;">POST</span>
+          <span class="url" id="api-url">/mcsproxy/v1/mer/upMerApplySubmit</span>
+          <span id="api-env">非交易类域名</span>
+        </div>
+        <div class="desc" id="api-desc">商户入驻/进件申请</div>
+      </div>
+
+      <div class="debug-body">
+        <div class="param-panel">
+          <div class="hint-box">通用参数可<b>从测试数据选择</b>或手动输入。私钥由<b>后端固定配置</b>,前端不接触,发送时由后端代签名。</div>
+
+          <div class="common-params">
+            <div class="cp-title">通用参数(可从测试数据带入)</div>
+            <div class="cp-row">
+              <label>客户号</label>
+              <select><option>企业商户-测试A (6666000000929806)</option><option>小微商户-测试B (6666000000929812)</option><option>手动输入</option></select>
+              <span style="font-size:11px;color:#999">mer_cust_id</span>
+            </div>
+            <div class="cp-row">
+              <label>系统商号</label>
+              <input value="DJS" style="width:100%">
+              <span style="font-size:11px;color:#999">source_num</span>
+            </div>
+            <div class="cp-row">
+              <label>设备号</label>
+              <input value="RY20240001" style="width:100%">
+              <span style="font-size:11px;color:#999">device_id</span>
+            </div>
+          </div>
+
+          <div class="param-section">
+            <div class="ps-title">业务参数(data)</div>
+            <div class="param-row">
+              <div class="plabel"><span class="cn">企业开户申请号</span><br><span class="en">apply_id</span></div>
+              <div class="pinput"><input value="io1Qhj55774Ab4FWPn3Ceyeg872H86"></div>
+              <div class="pdesc">必须,18位</div>
+            </div>
+            <div class="param-row">
+              <div class="plabel"><span class="cn">企业名称<span class="badge-required">*</span></span><br><span class="en">corp_name</span></div>
+              <div class="pinput"><input value="优品生活超市"></div>
+              <div class="pdesc">必须</div>
+            </div>
+            <div class="param-row">
+              <div class="plabel"><span class="cn">商户种类<span class="badge-required">*</span></span><br><span class="en">merchant_type</span></div>
+              <div class="pinput">
+                <select><option>COMPANY 企业商户</option><option>INDIVV 个体工商户</option><option>MICR 小微商户</option><option>GOVRM 政府机构</option></select>
+              </div>
+              <div class="pdesc">必须</div>
+            </div>
+            <div class="param-row">
+              <div class="plabel"><span class="cn">法人姓名<span class="badge-required">*</span></span><br><span class="en">legal_name</span></div>
+              <div class="pinput"><input value="张双双"></div>
+              <div class="pdesc">必须</div>
+            </div>
+            <div class="param-row">
+              <div class="plabel"><span class="cn">法人证件号<span class="badge-required">*</span></span><br><span class="en">legal_id_card</span></div>
+              <div class="pinput"><input value="32032119950126042X"></div>
+              <div class="pdesc">明文,18位</div>
+            </div>
+            <div class="param-row">
+              <div class="plabel"><span class="cn">结算卡卡号<span class="badge-required">*</span></span><br><span class="en">settlement_card_no</span></div>
+              <div class="pinput"><input value="6214835104407968"></div>
+              <div class="pdesc">必须</div>
+            </div>
+          </div>
+
+          <div class="param-section">
+            <div class="ps-title">附件资料 file_tokens(List,不参与签名)</div>
+            <div class="nest-group">
+              <div class="ng-head"><span class="ng-title">附件 1</span><button class="btn btn-sm" onclick="toast('删除该附件(演示)')">删除</button></div>
+              <div class="param-row nested">
+                <div class="plabel"><span class="cn">文件token</span><br><span class="en">file_id</span></div>
+                <div class="pinput"><select><option>134adeff-7ade-36bd... (营业执照.jpg)</option><option>6e8e0bca-041a-3328... (法人身份证正面.jpg)</option><option>53793666-2a9d-3063... (门头照片.jpg)</option></select></div>
+                <div class="pdesc">从图片资料选</div>
+              </div>
+              <div class="param-row nested">
+                <div class="plabel"><span class="cn">文件类型</span><br><span class="en">attach_type</span></div>
+                <div class="pinput"><select><option>01-营业执照图片</option><option>05-法人身份证正面</option><option>15-店铺门头照片</option></select></div>
+                <div class="pdesc">必须</div>
+              </div>
+              <div class="param-row nested">
+                <div class="plabel"><span class="cn">文件名称</span><br><span class="en">attach_name</span></div>
+                <div class="pinput"><input value="营业执照.jpg"></div>
+                <div class="pdesc">必须</div>
+              </div>
+            </div>
+            <button class="btn btn-sm" onclick="addNest(this)">+ 添加附件</button>
+          </div>
+        </div>
+
+        <div class="result-panel">
+          <div class="param-section">
+            <div class="ps-title">请求报文(后端组装后)</div>
+            <div class="result-block">
+              <div class="rb-head" onclick="toggleRb(this)"><span>请求体 Request Body</span><span>▾</span></div>
+              <div class="rb-body" id="req-body"></div>
+            </div>
+          </div>
+          <div class="param-section">
+            <div class="ps-title">返回报文</div>
+            <div class="result-block">
+              <div class="rb-head"><span>响应 Response</span><span class="status-ok">● 成功 000000</span></div>
+              <div class="rb-body" id="resp-body"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn btn-primary" onclick="sendReq()">发送请求</button>
+        <button class="btn" onclick="toast('表单已清空(演示)')">清空</button>
+        <span style="font-size:11px;color:#999;margin-left:auto;">点击 JSON 字段值后的"复制"可一键复制</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 模块三:用户故事 ============ -->
+<div id="page-story" class="page">
+  <div class="story-layout">
+    <div class="story-list">
+      <h3>用户故事列表</h3>
+      <div class="data-item active" onclick="selStory(this)">
+        <div class="name">企业商户进件并支付</div>
+        <div class="sub">6 个步骤</div>
+      </div>
+      <div class="data-item" onclick="selStory(this)">
+        <div class="name">小微商户进件流程</div>
+        <div class="sub">4 个步骤</div>
+      </div>
+      <div class="data-item" onclick="selStory(this)">
+        <div class="name">退款+余额查询</div>
+        <div class="sub">2 个步骤</div>
+      </div>
+      <button class="btn btn-primary btn-sm" style="width:100%;margin-top:12px" onclick="toast('新增用户故事(演示)')">+ 新增故事</button>
+    </div>
+
+    <div class="story-steps">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <h3 style="color:#999;font-weight:normal;font-size:13px;">故事步骤</h3>
+        <button class="btn btn-sm" onclick="toast('添加步骤:选择接口(演示)')">+ 添加步骤</button>
+      </div>
+      <div class="step-item active done" onclick="selStep(this,0)">
+        <span class="snum">1</span><span class="sname">文件上传</span>
+        <div class="smeta">file/upload · 已执行</div>
+        <div class="sdel">×</div>
+      </div>
+      <div class="step-item done" onclick="selStep(this,1)">
+        <span class="snum">2</span><span class="sname">商户进件</span>
+        <div class="smeta">upMerApplySubmit · 已执行</div>
+        <div class="sdel">×</div>
+      </div>
+      <div class="step-item" onclick="selStep(this,2)">
+        <span class="snum">3</span><span class="sname">进件结果查询</span>
+        <div class="smeta">corpRegResult · 待执行</div>
+        <div class="sdel">×</div>
+      </div>
+      <div class="step-item" onclick="selStep(this,3)">
+        <span class="snum">4</span><span class="sname">支付下单</span>
+        <div class="smeta">usersweep · 待执行</div>
+        <div class="sdel">×</div>
+      </div>
+      <div class="step-item" onclick="selStep(this,4)">
+        <span class="snum">5</span><span class="sname">退款</span>
+        <div class="smeta">refund · 待执行</div>
+        <div class="sdel">×</div>
+      </div>
+      <div class="step-item" onclick="selStep(this,5)">
+        <span class="snum">6</span><span class="sname">余额查询</span>
+        <div class="smeta">balance/query · 待执行</div>
+        <div class="sdel">×</div>
+      </div>
+    </div>
+
+    <div class="story-detail">
+      <div class="sd-head">
+        <span class="stitle">企业商户进件并支付</span>
+        <button class="btn btn-sm" onclick="toast('保存故事(演示)')">保存</button>
+        <button class="btn btn-sm btn-danger" onclick="toast('删除故事(演示)')">删除</button>
+        <span style="font-size:11px;color:#999;margin-left:auto;">手动单步执行 · 从历史结果复制参数粘贴</span>
+      </div>
+      <div class="sd-body">
+        <div class="step-param">
+          <div class="hint-box">
+            <b>当前步骤:Step 3 - 进件结果查询</b><br>
+            手动执行本步。如需用到上一步返回的 <b>user_cust_id</b>,请从右侧"Step 2 商户进件"结果中复制,粘贴到下方 apply_id / user_cust_id 字段。
+          </div>
+          <div class="common-params">
+            <div class="cp-title">通用参数</div>
+            <div class="cp-row"><label>客户号</label><input value="6666000000929806" style="width:100%"><span style="font-size:11px;color:#999">mer_cust_id</span></div>
+            <div class="cp-row"><label>系统商号</label><input value="DJS" style="width:100%"><span style="font-size:11px;color:#999">source_num</span></div>
+          </div>
+          <div class="param-section">
+            <div class="ps-title">业务参数</div>
+            <div class="param-row">
+              <div class="plabel"><span class="cn">企业开户申请号<span class="badge-required">*</span></span><br><span class="en">apply_id</span></div>
+              <div class="pinput"><input value="io1Qhj55774Ab4FWPn3Ceyeg872H86" placeholder="可从Step2结果复制"></div>
+              <div class="pdesc">必须</div>
+            </div>
+          </div>
+          <div class="action-bar" style="border:none;padding:8px 0;">
+            <button class="btn btn-primary" onclick="toast('已执行本步,结果保留在右侧(演示)')">执行本步</button>
+            <button class="btn" onclick="toast('已重置本步(演示)')">重置</button>
+          </div>
+        </div>
+        <div class="step-result">
+          <div class="hint-box" style="background:#f9f0ff;border-color:#d3adf7;color:#531dab;">右侧保留<b>所有已执行步骤</b>的请求与返回,点击下方标签切换查看,字段值可一键复制粘贴到当前步骤。</div>
+          <div class="sr-tabs">
+            <div class="sr-tab done active" onclick="selResultTab(this)">Step1 文件上传 ✓</div>
+            <div class="sr-tab done" onclick="selResultTab(this)">Step2 商户进件 ✓</div>
+          </div>
+          <div class="param-section">
+            <div class="ps-title">Step2 请求报文</div>
+            <div class="result-block">
+              <div class="rb-head" onclick="toggleRb(this)"><span>请求体</span><span>▾</span></div>
+              <div class="rb-body" id="story-req"></div>
+            </div>
+          </div>
+          <div class="param-section">
+            <div class="ps-title">Step2 返回报文</div>
+            <div class="result-block">
+              <div class="rb-head"><span>响应</span><span class="status-ok">● 000000</span></div>
+              <div class="rb-body" id="story-resp"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== 页面切换 =====
+function switchPage(p){
+  document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.nav a').forEach(e=>e.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.getElementById('nav-'+p).classList.add('active');
+}
+
+function toast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.style.display='block';
+  clearTimeout(window._tt);
+  window._tt=setTimeout(()=>t.style.display='none',1500);
+}
+
+// ===== 模块一 =====
+function selData(el,name){
+  el.parentElement.querySelectorAll('.data-item').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelector('#page-data .toolbar h2').textContent=name;
+}
+
+// ===== 模块二 =====
+function filterApi(input){
+  var kw=input.value.toLowerCase();
+  document.querySelectorAll('#api-tree .api-item').forEach(e=>{
+    var txt=e.textContent.toLowerCase();
+    e.style.display = txt.indexOf(kw)>=0 ? '' : 'none';
+  });
+}
+function selApi(el,title,url,env,desc){
+  document.querySelectorAll('#api-tree .api-item').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('api-title').textContent=title;
+  document.getElementById('api-url').textContent=url;
+  document.getElementById('api-env').textContent=env+'域名';
+  document.getElementById('api-desc').textContent=desc;
+}
+function addNest(btn){
+  toast('添加附件(演示)');
+}
+function toggleRb(head){
+  var body=head.nextElementSibling;
+  body.style.display = body.style.display==='none' ? '' : 'none';
+  head.querySelector('span:last-child').textContent = body.style.display==='none' ? '▸' : '▾';
+}
+function sendReq(){
+  toast('请求已发送(后端代签名转发,演示)');
+  setTimeout(()=>{
+    var rb=document.getElementById('req-body'); if(rb) rb.innerHTML=reqJson();
+    var rsb=document.getElementById('resp-body'); if(rsb) rsb.innerHTML=respJson();
+  },200);
+}
+
+// JSON 树渲染(带复制按钮)
+function jsonTree(obj, indent){
+  indent=indent||0;
+  var pad='  '.repeat(indent);
+  var html='';
+  if(obj===null) return '<span class="num">null</span>';
+  var t=typeof obj;
+  if(t==='number'||t==='boolean') return '<span class="num">'+obj+'</span>';
+  if(t==='string') {
+    var disp=obj.length>40?obj.slice(0,40)+'...':obj;
+    return '<span class="str">"'+disp+'"</span><span class="copy" onclick="copyVal(\''+obj.replace(/'/g,"\\'")+'\')">复制</span>';
+  }
+  if(Array.isArray(obj)){
+    if(!obj.length) return '[]';
+    html+='<span class="toggle" onclick="this.parentNode.querySelector(\'.inner\').style.display=this.parentNode.querySelector(\'.inner\').style.display===\'none\'?\'\':\'none\'">▾</span>[\n<div class="inner">';
+    obj.forEach((v,i)=>{
+      html+=pad+'  '+jsonTree(v,indent+1)+(i<obj.length-1?',':'')+'\n';
+    });
+    html+=pad+']</div>';
+    return html;
+  }
+  var keys=Object.keys(obj);
+  if(!keys.length) return '{}';
+  html+='<span class="toggle" onclick="this.parentNode.querySelector(\'.inner\').style.display=this.parentNode.querySelector(\'.inner\').style.display===\'none\'?\'\':\'none\'">▾</span>{\n<div class="inner">';
+  keys.forEach((k,i)=>{
+    html+=pad+'  <span class="key">"'+k+'"</span>: '+jsonTree(obj[k],indent+1)+(i<keys.length-1?',':'')+'\n';
+  });
+  html+=pad+'}</div>';
+  return html;
+}
+function copyVal(v){
+  var ta=document.createElement('textarea'); ta.value=v; document.body.appendChild(ta); ta.select();
+  try{document.execCommand('copy'); toast('已复制: '+v.slice(0,30)+(v.length>30?'...':''));}catch(e){toast('复制失败');}
+  document.body.removeChild(ta);
+}
+
+function reqJson(){
+  var o={
+    sign_type:'RSA2',
+    source_num:'DJS',
+    data:{
+      apply_id:'io1Qhj55774Ab4FWPn3Ceyeg872H86',
+      corp_name:'优品生活超市',
+      merchant_type:'COMPANY',
+      legal_name:'张双双',
+      legal_id_card:'32032119950126042X',
+      settlement_card_no:'6214835104407968',
+      file_tokens:[{file_id:'134adeff-7ade-36bd-abf9-aeccb8cc4d40',attach_type:'01',attach_name:'营业执照.jpg'}]
+    },
+    sign:'aB3xK9...mQ2sE8(后端RSA2签名,已剔除file_tokens/空值/排序)'
+  };
+  return jsonTree(o);
+}
+function respJson(){
+  var o={
+    resp_code:'000000',
+    resp_desc:'成功',
+    data:{
+      apply_id:'DJSio1Qhj55774Ab4FWPn3Ceyeg872H86',
+      user_cust_id:'6666000000929806'
+    },
+    sign:'xY7mN1...kP4tR9'
+  };
+  return jsonTree(o);
+}
+
+// ===== 模块三 =====
+function selStory(el){
+  el.parentElement.querySelectorAll('.data-item').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+}
+function selStep(el,idx){
+  el.parentElement.querySelectorAll('.step-item').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+}
+function selResultTab(el){
+  el.parentElement.querySelectorAll('.sr-tab').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// 初始化渲染
+window.addEventListener('DOMContentLoaded',function(){
+  var rb=document.getElementById('req-body'); if(rb) rb.innerHTML=reqJson();
+  var rsb=document.getElementById('resp-body'); if(rsb) rsb.innerHTML=respJson();
+  var sr=document.getElementById('story-req'); if(sr) sr.innerHTML=reqJson();
+  var srs=document.getElementById('story-resp'); if(srs) srs.innerHTML=respJson();
+});
+</script>
+</body>
+</html>
