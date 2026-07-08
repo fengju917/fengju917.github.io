@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>汇来米内控运营控台 - 事业部风险商户管理</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="./lib/xlsx.full.min.js"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        primary: '#1677ff',
+        primaryHover: '#4096ff',
+        danger: '#ff4d4f',
+        dangerHover: '#ff7875',
+        bg: '#f5f5f5',
+        card: '#ffffff',
+        border: '#e8e8e8',
+        textPrimary: '#262626',
+        textSecondary: '#8c8c8c',
+        sidebarBg: '#001529',
+        sidebarHover: '#000c17',
+        sidebarActive: '#1677ff',
+      }
+    }
+  }
+}
+</script>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; }
+.modal-overlay { transition: opacity .2s; }
+.modal-overlay.hidden { opacity: 0; pointer-events: none; }
+.modal-box { transition: transform .2s, opacity .2s; }
+.modal-overlay.hidden .modal-box { transform: translateY(20px); opacity: 0; }
+.toast { animation: toastIn .3s ease, toastOut .3s ease 1.7s forwards; }
+@keyframes toastIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes toastOut { from { opacity: 1; } to { opacity: 0; } }
+table { border-collapse: collapse; }
+th, td { border: 1px solid #f0f0f0; }
+.form-scroll { max-height: 65vh; overflow-y: auto; }
+.upload-zone { border: 2px dashed #d9d9d9; border-radius: 8px; padding: 32px; text-align: center; cursor: pointer; transition: border-color .2s; }
+.upload-zone:hover, .upload-zone.dragover { border-color: #1677ff; }
+.import-result { max-height: 220px; overflow-y: auto; }
+.merchant-name-loading { background: linear-gradient(90deg, #f5f5f5 25%, #e8e8e8 37%, #f5f5f5 63%); background-size: 400% 100%; animation: loading 1.2s ease infinite; }
+@keyframes loading { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+</style>
+</head>
+<body class="bg-bg min-h-screen">
+
+<!-- Toast Container -->
+<div id="toastContainer" class="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-2"></div>
+
+<!-- Layout: Sidebar + Main -->
+<div class="flex min-h-screen">
+
+  <!-- Sidebar -->
+  <div class="w-52 bg-sidebarBg flex flex-col flex-shrink-0">
+    <div class="h-14 flex items-center px-5 border-b border-white/10">
+      <span class="text-white text-base font-semibold tracking-wide">汇来米内控运营控台</span>
+    </div>
+    <nav class="flex-1 py-2 overflow-y-auto">
+      <div class="px-5 pt-3 pb-1 text-xs text-white/40 tracking-wider">风险管理</div>
+      <a class="flex items-center gap-3 px-5 py-3 text-sm text-white bg-sidebarActive/20 cursor-pointer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        <span>事业部风险商户管理</span>
+      </a>
+      <a class="flex items-center gap-3 px-5 py-3 text-sm text-white/70 hover:bg-sidebarHover cursor-pointer transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        <span>交易电子围栏管理</span>
+      </a>
+      <a class="flex items-center gap-3 px-5 py-3 text-sm text-white/70 hover:bg-sidebarHover cursor-pointer transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h8M8 14h5m4 7H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        <span>交易提示语封装管理</span>
+      </a>
+    </nav>
+  </div>
+
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col min-w-0">
+
+    <!-- Top Header -->
+    <div class="bg-card border-b border-border h-14 flex items-center px-6 flex-shrink-0">
+      <span class="text-sm text-textSecondary">风险管理 / 事业部风险商户管理</span>
+    </div>
+
+    <!-- Content Area -->
+    <div class="flex-1 overflow-y-auto">
+      <div class="px-6 py-5">
+
+        <!-- Page Title -->
+        <div class="mb-4">
+          <h2 class="text-lg font-semibold text-textPrimary">事业部风险商户管理</h2>
+          <p class="text-sm text-textSecondary mt-1">维护各事业部名下的风险商户清单，新增时商户名称由系统按商户号自动查询带出，支持单条与批量管理。</p>
+        </div>
+
+        <!-- Query Filter Bar -->
+        <div class="bg-card border border-border rounded-lg p-4 mb-4 flex flex-wrap items-end gap-4">
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-textSecondary">商户号</label>
+            <input id="filterMerchantNo" type="text" placeholder="请输入商户号" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[140px]">
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-textSecondary">商户名称</label>
+            <input id="filterMerchantName" type="text" placeholder="请输入商户名称" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[160px]">
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-textSecondary">销售</label>
+            <input id="filterSales" type="text" placeholder="请输入销售" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[120px]">
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-textSecondary">操作人</label>
+            <input id="filterOperator" type="text" placeholder="请输入操作人" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary min-w-[120px]">
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-textSecondary">创建时间</label>
+            <div class="flex items-center gap-1">
+              <input id="filterDateStart" type="date" class="border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary">
+              <span class="text-textSecondary text-xs">至</span>
+              <input id="filterDateEnd" type="date" class="border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary">
+            </div>
+          </div>
+          <button onclick="filterList()" class="bg-primary text-white px-4 py-1.5 rounded text-sm hover:bg-primaryHover transition-colors">查询</button>
+          <button onclick="resetFilter()" class="border border-gray-300 text-textSecondary px-4 py-1.5 rounded text-sm hover:border-primary hover:text-primary transition-colors">重置</button>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="mb-4 flex items-center gap-3 flex-wrap">
+          <button onclick="openAddModal()" class="bg-primary text-white px-4 py-1.5 rounded text-sm hover:bg-primaryHover transition-colors">+ 新增</button>
+          <button onclick="openImportModal('add')" class="bg-white border border-primary text-primary px-4 py-1.5 rounded text-sm hover:bg-blue-50 transition-colors">批量新增</button>
+          <button onclick="openImportModal('modify')" class="bg-white border border-primary text-primary px-4 py-1.5 rounded text-sm hover:bg-blue-50 transition-colors">批量修改</button>
+          <button id="btnBatchDel" onclick="batchDelete()" class="bg-white border border-danger text-danger px-4 py-1.5 rounded text-sm hover:bg-red-50 transition-colors opacity-50 cursor-not-allowed" disabled>批量删除</button>
+          <button onclick="exportList()" class="bg-white border border-gray-300 text-textSecondary px-4 py-1.5 rounded text-sm hover:border-primary hover:text-primary transition-colors">导出</button>
+          <span id="selectedCount" class="text-xs text-textSecondary ml-2 hidden">已选 <span class="text-primary font-medium">0</span> 项</span>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-card border border-border rounded-lg overflow-hidden">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-gray-50 text-textSecondary">
+                <th class="px-3 py-3 text-center font-medium w-10"><input id="checkAll" type="checkbox" onchange="toggleCheckAll(this)" class="accent-primary"></th>
+                <th class="px-3 py-3 text-left font-medium">商户号</th>
+                <th class="px-3 py-3 text-left font-medium">商户名称</th>
+                <th class="px-3 py-3 text-left font-medium">销售</th>
+                <th class="px-3 py-3 text-left font-medium">创建时间</th>
+                <th class="px-3 py-3 text-left font-medium">修改时间</th>
+                <th class="px-3 py-3 text-left font-medium">操作人</th>
+                <th class="px-3 py-3 text-left font-medium w-28">操作</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+          <div id="emptyTip" class="hidden py-12 text-center text-textSecondary text-sm">暂无数据</div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="mt-4 flex items-center justify-between">
+          <span id="pageInfo" class="text-xs text-textSecondary"></span>
+          <div class="flex items-center gap-1">
+            <button onclick="changePage('prev')" class="border border-gray-300 rounded px-3 py-1 text-xs text-textSecondary hover:border-primary hover:text-primary transition-colors">上一页</button>
+            <div id="pageButtons" class="flex items-center gap-1"></div>
+            <button onclick="changePage('next')" class="border border-gray-300 rounded px-3 py-1 text-xs text-textSecondary hover:border-primary hover:text-primary transition-colors">下一页</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add / Edit -->
+<div id="formModal" class="modal-overlay hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+  <div class="modal-box bg-white rounded-lg shadow-xl w-full max-w-xl mx-4 flex flex-col max-h-[85vh]">
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+      <h3 id="formModalTitle" class="text-base font-medium text-textPrimary">新增风险商户</h3>
+      <button onclick="closeFormModal()" class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+    </div>
+    <div class="form-scroll px-6 py-5 flex-1">
+      <div class="space-y-5">
+        <!-- 商户号 -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-sm text-textPrimary">商户号 <span class="text-danger">*</span></label>
+          <div class="flex gap-2">
+            <input id="formMerchantNo" type="text" placeholder="请输入商户号" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary flex-1">
+            <button id="btnQueryName" onclick="queryMerchantName()" class="bg-primary text-white px-4 py-2 rounded text-sm hover:bg-primaryHover transition-colors whitespace-nowrap">查询商户名称</button>
+          </div>
+          <p class="text-xs text-textSecondary">输入商户号后点击查询或失焦自动带出商户名称</p>
+        </div>
+        <!-- 商户名称（系统带出，只读） -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-sm text-textPrimary">商户名称 <span class="text-textSecondary text-xs font-normal">（系统自动带出，不可手动输入）</span></label>
+          <div id="formMerchantNameWrap" class="border border-gray-300 rounded px-3 py-2 text-sm bg-gray-50 text-textSecondary min-h-[38px] flex items-center">
+            <span id="formMerchantName" class="text-gray-400">请先填写商户号并查询</span>
+          </div>
+          <p id="merchantNameHint" class="text-xs text-textSecondary hidden">商户名称由系统根据商户号自动查询，无需手动填写</p>
+        </div>
+        <!-- 销售 -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-sm text-textPrimary">销售 <span class="text-textSecondary text-xs font-normal">（非必传）</span></label>
+          <input id="formSales" type="text" placeholder="请输入销售（选填）" class="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary">
+        </div>
+      </div>
+    </div>
+    <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2 flex-shrink-0">
+      <button onclick="closeFormModal()" class="border border-gray-300 text-textSecondary px-4 py-1.5 rounded text-sm hover:border-primary hover:text-primary transition-colors">取消</button>
+      <button onclick="submitForm()" class="bg-primary text-white px-4 py-1.5 rounded text-sm hover:bg-primaryHover transition-colors">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Batch Import (新增 / 修改) -->
+<div id="importModal" class="modal-overlay hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+  <div class="modal-box bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 flex flex-col max-h-[85vh]">
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+      <h3 id="importModalTitle" class="text-base font-medium text-textPrimary">批量新增</h3>
+      <button onclick="closeImportModal()" class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+    </div>
+    <div class="form-scroll px-6 py-5 flex-1">
+      <div class="space-y-5">
+        <!-- Template Download -->
+        <div class="flex items-center gap-3 flex-wrap">
+          <button onclick="downloadTemplate()" class="text-primary hover:text-primaryHover text-sm flex items-center gap-1 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            下载导入模板
+          </button>
+          <span id="templateHint" class="text-xs text-textSecondary"></span>
+        </div>
+        <!-- Upload Zone -->
+        <div id="uploadZone" class="upload-zone" onclick="document.getElementById('fileInput').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="event.preventDefault();this.classList.remove('dragover');handleFileDrop(event)">
+          <svg class="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+          <p class="text-sm text-textSecondary">点击或拖拽 Excel 文件到此处上传</p>
+          <p class="text-xs text-textSecondary mt-1">支持 .xlsx / .xls 格式，单次最多 5000 条</p>
+        </div>
+        <input id="fileInput" type="file" accept=".xlsx,.xls" class="hidden" onchange="handleFileSelect(event)">
+        <div id="fileName" class="hidden text-sm text-textPrimary flex items-center gap-2">
+          <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span id="fileNameText"></span>
+          <button onclick="clearFile()" class="text-textSecondary hover:text-danger text-xs ml-auto">移除</button>
+        </div>
+        <div id="modifyNotice" class="hidden text-xs text-orange-600 bg-orange-50 border border-orange-200 rounded px-3 py-2">批量修改按「序号」匹配已存在记录，序号可通过导出或列表获取，匹配成功后覆盖销售；商户号不可修改。批量新增无需序号，商户名称由系统按商户号自动查询带出。</div>
+      </div>
+    </div>
+    <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2 flex-shrink-0">
+      <button onclick="closeImportModal()" class="border border-gray-300 text-textSecondary px-4 py-1.5 rounded text-sm hover:border-primary hover:text-primary transition-colors">取消</button>
+      <button id="btnImport" onclick="doImport()" class="bg-primary text-white px-4 py-1.5 rounded text-sm hover:bg-primaryHover transition-colors">导入</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Import Result -->
+<div id="importResultModal" class="modal-overlay hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+  <div class="modal-box bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 flex flex-col max-h-[85vh]">
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+      <h3 class="text-base font-medium text-textPrimary">导入结果</h3>
+      <button onclick="closeImportResultModal()" class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+    </div>
+    <div class="form-scroll px-6 py-5 flex-1">
+      <div id="importResultContent"></div>
+    </div>
+    <div class="px-6 py-4 border-t border-gray-100 flex justify-end flex-shrink-0">
+      <button onclick="closeImportResultModal()" class="bg-primary text-white px-4 py-1.5 rounded text-sm hover:bg-primaryHover transition-colors">知道了</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div id="confirmModal" class="modal-overlay hidden fixed inset-0 bg-black/40 z-[60] flex items-center justify-center">
+  <div class="modal-box bg-white rounded-lg shadow-xl w-full max-w-sm mx-4">
+    <div class="px-6 py-5">
+      <p id="confirmMsg" class="text-sm text-textPrimary"></p>
+    </div>
+    <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
+      <button onclick="cancelConfirm()" class="border border-gray-300 text-textSecondary px-4 py-1.5 rounded text-sm hover:border-primary hover:text-primary transition-colors">取消</button>
+      <button id="confirmBtn" onclick="doConfirm()" class="bg-primary text-white px-4 py-1.5 rounded text-sm hover:bg-primaryHover transition-colors">确认</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== Data ==========
+const now = () => new Date().toLocaleString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' }).replace(/\//g, '-');
+const dateStr = () => {
+  const d = new Date();
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`;
+};
+
+// 商户号 -> 商户名称 的模拟系统库（实际应由后端按商户号查询）
+const merchantNameDB = {
+  'M100001': '深圳南山区便利店',
+  'M100002': '广州天河区数码店',
+  'M100003': '北京朝阳区餐饮店',
+  'M100004': '上海浦东新区药房',
+  'M100005': '杭州西湖区水果店',
+  'M100006': '成都武侯区服装店',
+  'M100007': '武汉江汉区超市',
+  'M100008': '南京鼓楼区奶茶店',
+  'M100009': '西安雁塔区电器店',
+  'M100010': '重庆渝中区建材店',
+  'M100011': '苏州姑苏区礼品店',
+  'M100012': '天津和平区母婴店',
+  'M100013': '青岛市南区海鲜店',
+  'M100014': '厦门思明区茶叶店',
+  'M100015': '长沙岳麓区零食店',
+};
+
+let dataList = [
+  { id: 1, merchantNo: 'M100001', merchantName: '深圳南山区便利店', sales: '张三', createTime: '2026-05-10 09:30:00', updateTime: '2026-06-15 14:20:00', operator: '李四' },
+  { id: 2, merchantNo: 'M100002', merchantName: '广州天河区数码店', sales: '王五', createTime: '2026-05-11 10:15:00', updateTime: '2026-06-01 11:00:00', operator: '李四' },
+  { id: 3, merchantNo: 'M100003', merchantName: '北京朝阳区餐饮店', sales: '', createTime: '2026-05-12 16:40:00', updateTime: '2026-05-12 16:40:00', operator: '张三' },
+  { id: 4, merchantNo: 'M100004', merchantName: '上海浦东新区药房', sales: '赵六', createTime: '2026-05-15 08:50:00', updateTime: '2026-06-20 09:10:00', operator: '李四' },
+  { id: 5, merchantNo: 'M100005', merchantName: '杭州西湖区水果店', sales: '张三', createTime: '2026-05-18 13:25:00', updateTime: '2026-06-05 17:30:00', operator: '王五' },
+  { id: 6, merchantNo: 'M100006', merchantName: '成都武侯区服装店', sales: '', createTime: '2026-05-20 11:00:00', updateTime: '2026-05-20 11:00:00', operator: '张三' },
+  { id: 7, merchantNo: 'M100007', merchantName: '武汉江汉区超市', sales: '赵六', createTime: '2026-05-22 15:10:00', updateTime: '2026-06-18 10:45:00', operator: '李四' },
+  { id: 8, merchantNo: 'M100008', merchantName: '南京鼓楼区奶茶店', sales: '王五', createTime: '2026-05-25 09:00:00', updateTime: '2026-06-22 14:00:00', operator: '李四' },
+  { id: 9, merchantNo: 'M100009', merchantName: '西安雁塔区电器店', sales: '张三', createTime: '2026-05-26 14:30:00', updateTime: '2026-05-26 14:30:00', operator: '王五' },
+  { id: 10, merchantNo: 'M100010', merchantName: '重庆渝中区建材店', sales: '赵六', createTime: '2026-05-28 10:20:00', updateTime: '2026-06-10 16:15:00', operator: '李四' },
+  { id: 11, merchantNo: 'M100011', merchantName: '苏州姑苏区礼品店', sales: '', createTime: '2026-06-01 09:45:00', updateTime: '2026-06-01 09:45:00', operator: '张三' },
+  { id: 12, merchantNo: 'M100012', merchantName: '天津和平区母婴店', sales: '王五', createTime: '2026-06-03 17:00:00', updateTime: '2026-06-25 08:30:00', operator: '李四' },
+];
+let idSeq = 13;
+let editingId = null;
+let confirmCallback = null;
+let selectedIds = new Set();
+let importMode = 'add'; // 'add' | 'modify'
+let queriedMerchantName = ''; // 表单中已查询出的商户名称
+
+// Pagination
+let currentPage = 1;
+const pageSize = 10;
+
+// ========== Toast ==========
+function showToast(msg, type = 'success') {
+  const colors = { success: 'bg-green-500', error: 'bg-red-500', info: 'bg-primary' };
+  const el = document.createElement('div');
+  el.className = `toast ${colors[type] || colors.info} text-white px-5 py-2.5 rounded shadow-lg text-sm`;
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 2200);
+}
+
+// ========== Render Table ==========
+function getFilteredData() {
+  const merchantNo = document.getElementById('filterMerchantNo').value.trim().toLowerCase();
+  const merchantName = document.getElementById('filterMerchantName').value.trim().toLowerCase();
+  const sales = document.getElementById('filterSales').value.trim().toLowerCase();
+  const operator = document.getElementById('filterOperator').value.trim().toLowerCase();
+  const dateStart = document.getElementById('filterDateStart').value;
+  const dateEnd = document.getElementById('filterDateEnd').value;
+  return dataList.filter(d => {
+    if (merchantNo && !d.merchantNo.toLowerCase().includes(merchantNo)) return false;
+    if (merchantName && !d.merchantName.toLowerCase().includes(merchantName)) return false;
+    if (sales && !d.sales.toLowerCase().includes(sales)) return false;
+    if (operator && !d.operator.toLowerCase().includes(operator)) return false;
+    if (dateStart || dateEnd) {
+      const c = d.createTime.replace(/-/g, '').slice(0, 8);
+      if (dateStart && c < dateStart.replace(/-/g, '')) return false;
+      if (dateEnd && c > dateEnd.replace(/-/g, '')) return false;
+    }
+    return true;
+  });
+}
+
+function renderTable() {
+  const filtered = getFilteredData();
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  if (currentPage > totalPages) currentPage = totalPages;
+  const start = (currentPage - 1) * pageSize;
+  const pageData = filtered.slice(start, start + pageSize);
+
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyTip');
+
+  if (!pageData.length) {
+    tbody.innerHTML = '';
+    empty.classList.remove('hidden');
+  } else {
+    empty.classList.add('hidden');
+    tbody.innerHTML = pageData.map(d => {
+      const checked = selectedIds.has(d.id) ? 'checked' : '';
+      return `
+      <tr class="hover:bg-gray-50 transition-colors">
+        <td class="px-3 py-3 text-center"><input type="checkbox" class="row-check accent-primary" data-id="${d.id}" ${checked} onchange="toggleCheck(${d.id}, this)"></td>
+        <td class="px-3 py-3 text-textPrimary font-mono text-xs">${escapeHtml(d.merchantNo)}</td>
+        <td class="px-3 py-3 text-textPrimary">${escapeHtml(d.merchantName)}</td>
+        <td class="px-3 py-3 text-textSecondary">${escapeHtml(d.sales) || '<span class="text-gray-300">-</span>'}</td>
+        <td class="px-3 py-3 text-textSecondary text-xs">${d.createTime}</td>
+        <td class="px-3 py-3 text-textSecondary text-xs">${d.updateTime}</td>
+        <td class="px-3 py-3 text-textSecondary">${escapeHtml(d.operator)}</td>
+        <td class="px-3 py-3">
+          <div class="flex items-center gap-2">
+            <button onclick="openEditModal(${d.id})" class="text-primary hover:text-primaryHover text-xs transition-colors">修改</button>
+            <button onclick="confirmDelete(${d.id})" class="text-danger hover:text-dangerHover text-xs transition-colors">删除</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  document.getElementById('pageInfo').textContent = `共 ${filtered.length} 条，第 ${currentPage}/${totalPages} 页`;
+  const pageBtns = document.getElementById('pageButtons');
+  pageBtns.innerHTML = '';
+  for (let i = 1; i <= totalPages; i++) {
+    const active = i === currentPage ? 'bg-primary text-white border-primary' : 'border-gray-300 text-textSecondary hover:border-primary hover:text-primary';
+    pageBtns.innerHTML += `<button onclick="goPage(${i})" class="border rounded px-2.5 py-1 text-xs transition-colors ${active}">${i}</button>`;
+  }
+  updateBatchBtn();
+}
+
+function changePage(dir) {
+  const filtered = getFilteredData();
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  if (dir === 'prev' && currentPage > 1) currentPage--;
+  if (dir === 'next' && currentPage < totalPages) currentPage++;
+  renderTable();
+}
+
+function goPage(p) {
+  currentPage = p;
+  renderTable();
+}
+
+// ========== Checkbox ==========
+function toggleCheck(id, el) {
+  if (el.checked) selectedIds.add(id); else selectedIds.delete(id);
+  renderTable();
+}
+
+function toggleCheckAll(el) {
+  const filtered = getFilteredData();
+  const start = (currentPage - 1) * pageSize;
+  const pageData = filtered.slice(start, start + pageSize);
+  pageData.forEach(d => {
+    if (el.checked) selectedIds.add(d.id); else selectedIds.delete(d.id);
+  });
+  renderTable();
+}
+
+function updateBatchBtn() {
+  const btn = document.getElementById('btnBatchDel');
+  const countEl = document.getElementById('selectedCount');
+  const count = selectedIds.size;
+  if (count > 0) {
+    btn.disabled = false;
+    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+    countEl.classList.remove('hidden');
+    countEl.querySelector('span').textContent = count;
+  } else {
+    btn.disabled = true;
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
+    countEl.classList.add('hidden');
+  }
+  const filtered = getFilteredData();
+  const start = (currentPage - 1) * pageSize;
+  const pageData = filtered.slice(start, start + pageSize);
+  const allChecked = pageData.length > 0 && pageData.every(d => selectedIds.has(d.id));
+  document.getElementById('checkAll').checked = allChecked;
+}
+
+// ========== Filter ==========
+function filterList() {
+  currentPage = 1;
+  selectedIds.clear();
+  renderTable();
+}
+
+function resetFilter() {
+  document.getElementById('filterMerchantNo').value = '';
+  document.getElementById('filterMerchantName').value = '';
+  document.getElementById('filterSales').value = '';
+  document.getElementById('filterOperator').value = '';
+  document.getElementById('filterDateStart').value = '';
+  document.getElementById('filterDateEnd').value = '';
+  currentPage = 1;
+  selectedIds.clear();
+  renderTable();
+}
+
+// ========== 商户名称查询（模拟系统按商户号查询） ==========
+function queryMerchantName() {
+  const no = document.getElementById('formMerchantNo').value.trim();
+  const wrap = document.getElementById('formMerchantNameWrap');
+  const nameEl = document.getElementById('formMerchantName');
+  const hint = document.getElementById('merchantNameHint');
+  if (!no) {
+    queriedMerchantName = '';
+    nameEl.textContent = '请先填写商户号并查询';
+    nameEl.className = 'text-gray-400';
+    hint.classList.add('hidden');
+    showToast('请先输入商户号', 'error');
+    return;
+  }
+  // loading 态
+  wrap.classList.add('merchant-name-loading');
+  nameEl.textContent = '正在查询商户名称...';
+  nameEl.className = 'text-gray-400';
+  // 模拟异步请求
+  setTimeout(() => {
+    wrap.classList.remove('merchant-name-loading');
+    const name = merchantNameDB[no];
+    if (name) {
+      queriedMerchantName = name;
+      nameEl.textContent = name;
+      nameEl.className = 'text-textPrimary';
+      hint.classList.remove('hidden');
+      showToast('商户名称查询成功', 'success');
+    } else {
+      queriedMerchantName = '';
+      nameEl.textContent = '未查询到该商户号对应的商户，请确认商户号是否正确';
+      nameEl.className = 'text-danger';
+      hint.classList.add('hidden');
+      showToast('未查询到该商户号', 'error');
+    }
+  }, 600);
+}
+
+// ========== Form Modal ==========
+function openAddModal() {
+  editingId = null;
+  document.getElementById('formModalTitle').textContent = '新增风险商户';
+  clearForm();
+  document.getElementById('formModal').classList.remove('hidden');
+}
+
+function openEditModal(id) {
+  const d = dataList.find(x => x.id === id);
+  if (!d) return;
+  editingId = id;
+  document.getElementById('formModalTitle').textContent = '修改风险商户';
+  clearForm();
+  document.getElementById('formMerchantNo').value = d.merchantNo;
+  document.getElementById('formMerchantNo').readOnly = true;
+  document.getElementById('formMerchantNo').classList.add('bg-gray-50', 'cursor-not-allowed', 'text-gray-500');
+  document.getElementById('btnQueryName').disabled = true;
+  document.getElementById('btnQueryName').classList.add('opacity-50', 'cursor-not-allowed');
+  queriedMerchantName = d.merchantName;
+  const nameEl = document.getElementById('formMerchantName');
+  nameEl.textContent = d.merchantName;
+  nameEl.className = 'text-textPrimary';
+  document.getElementById('merchantNameHint').classList.remove('hidden');
+  document.getElementById('formSales').value = d.sales;
+  document.getElementById('formModal').classList.remove('hidden');
+}
+
+function clearForm() {
+  document.getElementById('formMerchantNo').value = '';
+  document.getElementById('formMerchantNo').readOnly = false;
+  document.getElementById('formMerchantNo').classList.remove('bg-gray-50', 'cursor-not-allowed', 'text-gray-500');
+  document.getElementById('btnQueryName').disabled = false;
+  document.getElementById('btnQueryName').classList.remove('opacity-50', 'cursor-not-allowed');
+  document.getElementById('formMerchantName').textContent = '请先填写商户号并查询';
+  document.getElementById('formMerchantName').className = 'text-gray-400';
+  document.getElementById('merchantNameHint').classList.add('hidden');
+  document.getElementById('formMerchantNameWrap').classList.remove('merchant-name-loading');
+  document.getElementById('formSales').value = '';
+  queriedMerchantName = '';
+}
+
+function closeFormModal() {
+  document.getElementById('formModal').classList.add('hidden');
+}
+
+function submitForm() {
+  const merchantNo = document.getElementById('formMerchantNo').value.trim();
+  const sales = document.getElementById('formSales').value.trim();
+
+  if (!merchantNo) { showToast('请输入商户号', 'error'); return; }
+  if (!queriedMerchantName) { showToast('请先查询出商户名称', 'error'); return; }
+
+  // 唯一性校验：商户号不可重复
+  const dup = dataList.some(x => x.id !== editingId && x.merchantNo === merchantNo);
+  if (dup) { showToast('该商户号已存在风险商户记录', 'error'); return; }
+
+  if (editingId !== null) {
+    const idx = dataList.findIndex(x => x.id === editingId);
+    if (idx > -1) {
+      dataList[idx].sales = sales;
+      dataList[idx].operator = '当前用户';
+      dataList[idx].updateTime = now();
+    }
+    showToast('修改成功');
+  } else {
+    const t = now();
+    dataList.push({ id: idSeq++, merchantNo, merchantName: queriedMerchantName, sales, createTime: t, updateTime: t, operator: '当前用户' });
+    showToast('新增成功');
+  }
+  closeFormModal();
+  renderTable();
+}
+
+// ========== Delete ==========
+function confirmDelete(id) {
+  const d = dataList.find(x => x.id === id);
+  if (!d) return;
+  const btnLabel = document.getElementById('confirmBtn');
+  btnLabel.textContent = '确认删除';
+  btnLabel.className = 'bg-danger text-white px-4 py-1.5 rounded text-sm hover:bg-dangerHover transition-colors';
+  showConfirm(`确认删除风险商户【${d.merchantNo} - ${d.merchantName}】吗？删除后不可恢复。`, () => {
+    dataList = dataList.filter(x => x.id !== id);
+    selectedIds.delete(id);
+    renderTable();
+    showToast('删除成功');
+  });
+}
+
+function batchDelete() {
+  if (selectedIds.size === 0) return;
+  const btnLabel = document.getElementById('confirmBtn');
+  btnLabel.textContent = '确认删除';
+  btnLabel.className = 'bg-danger text-white px-4 py-1.5 rounded text-sm hover:bg-dangerHover transition-colors';
+  showConfirm(`确认删除选中的 ${selectedIds.size} 条风险商户吗？删除后不可恢复。`, () => {
+    dataList = dataList.filter(x => !selectedIds.has(x.id));
+    selectedIds.clear();
+    renderTable();
+    showToast('批量删除成功');
+  });
+}
+
+// ========== Confirm Modal ==========
+function showConfirm(msg, cb) {
+  document.getElementById('confirmMsg').textContent = msg;
+  confirmCallback = cb;
+  document.getElementById('confirmModal').classList.remove('hidden');
+}
+
+function cancelConfirm() {
+  confirmCallback = null;
+  document.getElementById('confirmModal').classList.add('hidden');
+}
+
+function doConfirm() {
+  if (confirmCallback) confirmCallback();
+  confirmCallback = null;
+  document.getElementById('confirmModal').classList.add('hidden');
+}
+
+// ========== Batch Import (新增 / 修改) ==========
+function openImportModal(mode) {
+  importMode = mode;
+  clearImportForm();
+  const isModify = mode === 'modify';
+  document.getElementById('importModalTitle').textContent = isModify ? '批量修改' : '批量新增';
+  document.getElementById('templateHint').textContent = isModify ? '修改模板含「序号」列，按序号匹配覆盖销售' : '模板含商户号、销售（商户名称系统自动带出）';
+  document.getElementById('modifyNotice').classList.toggle('hidden', !isModify);
+  document.getElementById('importModal').classList.remove('hidden');
+}
+
+function closeImportModal() {
+  document.getElementById('importModal').classList.add('hidden');
+}
+
+function clearImportForm() {
+  document.getElementById('fileInput').value = '';
+  document.getElementById('fileName').classList.add('hidden');
+  document.getElementById('fileNameText').textContent = '';
+}
+
+function downloadTemplate() {
+  const isModify = importMode === 'modify';
+  const headers = isModify
+    ? ['序号', '商户号', '销售']
+    : ['商户号', '销售'];
+  const exampleRow = isModify
+    ? [1, 'M100001', '张三']
+    : ['M100013', '李四'];
+  const aoa = [headers, exampleRow];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = isModify ? [{wch:8},{wch:16},{wch:12}] : [{wch:16},{wch:12}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '模板');
+  const name = isModify ? '风险商户-批量修改模板.xlsx' : '风险商户-批量新增模板.xlsx';
+  XLSX.writeFile(wb, name);
+  showToast('模板已开始下载', 'info');
+}
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) showFileName(file.name);
+}
+
+function handleFileDrop(e) {
+  const file = e.dataTransfer.files[0];
+  if (file) showFileName(file.name);
+}
+
+function showFileName(name) {
+  document.getElementById('fileName').classList.remove('hidden');
+  document.getElementById('fileNameText').textContent = name;
+}
+
+function clearFile() {
+  document.getElementById('fileInput').value = '';
+  document.getElementById('fileName').classList.add('hidden');
+}
+
+function doImport() {
+  const file = document.getElementById('fileInput').files[0];
+  if (!file) { showToast('请上传 Excel 文件', 'error'); return; }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      if (!rows.length) { showToast('Excel 文件中没有数据', 'error'); return; }
+      importMode === 'modify' ? applyImportModify(rows) : applyImportAdd(rows);
+    } catch (err) {
+      showToast('文件解析失败，请检查格式', 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function applyImportAdd(rows) {
+  let success = 0, fail = 0;
+  const failRows = [];
+  const newRecords = [];
+  const seenNos = new Set();
+  rows.forEach((r, idx) => {
+    const excelRow = idx + 2;
+    const merchantNo = String(r['商户号'] || '').trim();
+    const sales = String(r['销售'] || '').trim();
+    if (!merchantNo) { fail++; failRows.push({ row: excelRow, reason: '商户号为空' }); return; }
+    const merchantName = merchantNameDB[merchantNo];
+    if (!merchantName) { fail++; failRows.push({ row: excelRow, reason: `商户号 ${merchantNo} 系统未查询到对应商户` }); return; }
+    if (dataList.some(x => x.merchantNo === merchantNo) || seenNos.has(merchantNo)) {
+      fail++; failRows.push({ row: excelRow, reason: `商户号 ${merchantNo} 已存在` }); return;
+    }
+    seenNos.add(merchantNo);
+    const t = now();
+    newRecords.push({ id: idSeq++, merchantNo, merchantName, sales, createTime: t, updateTime: t, operator: '当前用户' });
+    success++;
+  });
+  dataList.push(...newRecords);
+  closeImportModal();
+  showImportResult(success, fail, failRows);
+  renderTable();
+}
+
+function applyImportModify(rows) {
+  let success = 0, fail = 0;
+  const failRows = [];
+  rows.forEach((r, idx) => {
+    const excelRow = idx + 2;
+    const idRaw = String(r['序号'] || '').trim();
+    const merchantNo = String(r['商户号'] || '').trim();
+    const sales = String(r['销售'] || '').trim();
+    const id = parseInt(idRaw);
+    if (!idRaw || isNaN(id)) { fail++; failRows.push({ row: excelRow, reason: '序号为空或无效' }); return; }
+    const target = dataList.find(x => x.id === id);
+    if (!target) { fail++; failRows.push({ row: excelRow, reason: `序号 ${id} 不存在` }); return; }
+    if (!merchantNo) { fail++; failRows.push({ row: excelRow, reason: '商户号为空' }); return; }
+    if (merchantNo !== target.merchantNo) { fail++; failRows.push({ row: excelRow, reason: `商户号不可修改（原 ${target.merchantNo}）` }); return; }
+    target.sales = sales;
+    target.updateTime = now();
+    target.operator = '当前用户';
+    success++;
+  });
+  closeImportModal();
+  showImportResult(success, fail, failRows);
+  renderTable();
+}
+
+function showImportResult(success, fail, failRows) {
+  let html = `
+    <div class="space-y-4">
+      <div class="flex items-center gap-4">
+        <div class="text-center flex-1 bg-green-50 rounded-lg py-3">
+          <div class="text-2xl font-semibold text-green-600">${success}</div>
+          <div class="text-xs text-green-600 mt-1">成功</div>
+        </div>
+        <div class="text-center flex-1 bg-red-50 rounded-lg py-3">
+          <div class="text-2xl font-semibold text-red-500">${fail}</div>
+          <div class="text-xs text-red-500 mt-1">失败</div>
+        </div>
+      </div>`;
+  if (failRows.length) {
+    html += `<div class="import-result"><table class="w-full text-xs"><thead><tr class="bg-gray-50"><th class="px-2 py-1.5 text-left text-textSecondary">行号</th><th class="px-2 py-1.5 text-left text-textSecondary">失败原因</th></tr></thead><tbody>`;
+    failRows.forEach(r => { html += `<tr><td class="px-2 py-1.5 text-textPrimary">第 ${r.row} 行</td><td class="px-2 py-1.5 text-danger">${escapeHtml(r.reason)}</td></tr>`; });
+    html += `</tbody></table></div>`;
+  }
+  html += `</div>`;
+  document.getElementById('importResultContent').innerHTML = html;
+  document.getElementById('importResultModal').classList.remove('hidden');
+}
+
+function closeImportResultModal() {
+  document.getElementById('importResultModal').classList.add('hidden');
+}
+
+// ========== Export ==========
+function exportList() {
+  const filtered = getFilteredData();
+  if (!filtered.length) { showToast('没有可导出的数据', 'error'); return; }
+  const rows = filtered.map((d, i) => ({
+    '序号': i + 1,
+    '商户号': d.merchantNo,
+    '商户名称': d.merchantName,
+    '销售': d.sales,
+    '创建时间': d.createTime,
+    '修改时间': d.updateTime,
+    '操作人': d.operator,
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [{wch:6},{wch:14},{wch:24},{wch:10},{wch:20},{wch:20},{wch:10}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '风险商户');
+  XLSX.writeFile(wb, `风险商户导出_${dateStr()}.xlsx`);
+  showToast(`已导出 ${filtered.length} 条数据`);
+}
+
+// ========== Utils ==========
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+// 商户号失焦自动查询
+document.addEventListener('DOMContentLoaded', () => {
+  const noInput = document.getElementById('formMerchantNo');
+  noInput.addEventListener('blur', () => {
+    if (editingId !== null) return; // 修改时不触发
+    if (noInput.value.trim()) queryMerchantName();
+  });
+});
+
+// ========== Close modals on overlay click ==========
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.add('hidden');
+  });
+});
+
+// ========== Init ==========
+renderTable();
+</script>
+</body>
+</html>
